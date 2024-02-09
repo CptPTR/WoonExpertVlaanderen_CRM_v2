@@ -16,7 +16,10 @@
     "@vuepic/vue-datepicker": "^7.2.2",
     "@vueuse/components": "^10.6.1",
     "@vueuse/core": "^10.6.1",
+    "gsap": "^3.12.5",
+    "normalize.css": "^8.0.1",
     "pinia": "^2.1.7",
+    "primeicons": "^6.0.1",
     "primevue": "^3.44.0",
     "vue": "^3.3.4",
     "vue-router": "^4.2.5"

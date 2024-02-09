@@ -4,6 +4,11 @@ import type { ToegangEenheid } from '@/enums/modules/ToegangEenheid'
 import { Status } from '../enums/modules/Status'
 import type { TypeKeuring } from '../enums/modules/TypeKeuring'
 
+export type Notificatie = {
+  message: string
+  type: string
+}
+
 export type Klant = {
   id?: string
   voornaam: string
@@ -24,12 +29,15 @@ export type VlaamseStad = {
   gemeente: string
   stad: string
   provincie: string
+  postcode: string
 }
 
 export type Keuring = {
   id?: string
-  adres: Adres
-  klant: Klant
+  adresID?: string
+  klantID?: string
+  facturatieID?: string | null
+  facturatie_bestemming?: FacturatieBestemming
   status: Status
   toegang_eenheid: ToegangEenheid
   type: TypeKeuring
@@ -40,6 +48,11 @@ export type Keuring = {
   certificaten_asbest?: Certificaat[]
   extra_documenten?: ExtraDocument[]
   opmerking: string
+}
+
+export type KeuringData = Keuring & {
+  adres: Adres
+  klant: Klant
   facturatie: Facturatie | null
 }
 
@@ -52,6 +65,7 @@ export type Gebruiker = {
   specialisatie: TypeKeuring
   rol: Rol
   organisatie: Organisatie
+  avatar: string
 }
 
 export type Organisatie = {
@@ -61,14 +75,14 @@ export type Organisatie = {
 
 export type Facturatie = {
   id?: string
-  voornaam?: string
-  achternaam?: string
-  emailadres?: string
-  telefoonnummer?: string
-  straatnaam?: string
-  nummer?: string
-  vlaamse_stad?: VlaamseStad
-  bestemming: FacturatieBestemming
+  voornaam: string
+  achternaam: string
+  emailadres: string
+  telefoonnummer: string
+  straatnaam: string
+  nummer: string
+  vlaamse_stad: VlaamseStad
+  organisatie?: string | null
 }
 
 export type Certificaat = {
@@ -76,6 +90,7 @@ export type Certificaat = {
   naam: string
   type: string
   size: number
+  keuringID: string
 }
 
 export type ExtraDocument = {
@@ -83,7 +98,7 @@ export type ExtraDocument = {
   naam: string
   size: number
   type: string
-  adres?: Adres
+  adresID: string
 }
 
 export type FormKeuring = {
@@ -94,13 +109,13 @@ export type FormKeuring = {
   telefoonnummer: string
 
   adresID: string
+  klantID: string
+  facturatieID: string | null
+  facturatie_bestemming: FacturatieBestemming
+
   straatnaam: string
   nummer: string
-  vlaamse_stad: {
-    gemeente: string
-    stad: string
-    provincie: string
-  }
+  vlaamse_stad: VlaamseStad
 
   status: Status
   opmerking: string
@@ -111,5 +126,5 @@ export type FormKeuring = {
   asbest_certificaten: Certificaat[]
   extra_documenten: ExtraDocument[]
   created_by: Gebruiker
-  facturatie: Facturatie
+  // facturatie: Facturatie
 }

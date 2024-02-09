@@ -1,12 +1,12 @@
-import type { Keuring } from '@/types'
+import type { KeuringData } from '@/types'
 import { defineStore } from 'pinia'
 import { ref, type Ref } from 'vue'
 
-export const useKeuringStore = defineStore('keuringen', () => {
-  const keuringen: Ref<Keuring[]> = ref([])
+export const useKeuringenStore = defineStore('keuringen', () => {
+  const keuringen: Ref<KeuringData[]> = ref([])
   const currentlyOpenedKeuring: Ref<string | null> = ref(null)
 
-  const addKeuring = (keuring: Keuring) => {
+  const addKeuring = (keuring: KeuringData) => {
     keuringen.value.push(keuring)
   }
 
@@ -19,7 +19,7 @@ export const useKeuringStore = defineStore('keuringen', () => {
   }
 
   const getKeuring = (id: string) => {
-    return keuringen.value.find((keuring) => keuring.id === id)!
+    return keuringen.value.find((keuring) => keuring.id === id)
   }
 
   const empty = () => {

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { RouterView, useRoute, useRouter } from 'vue-router';
+import { RouterView, useRoute } from 'vue-router';
 import UserProfile from './components/UserProfile.vue';
+import WEVNotificatie from './components/WEVNotificatie.vue';
 
-const { currentRoute } = useRouter();
 const route = useRoute();
 </script>
 
@@ -22,23 +22,34 @@ const route = useRoute();
   </header>
 
   <RouterView />
+  <WEVNotificatie message="Keuring succesvol aangemaakt!" />
 </template>
 
 <style lang="scss">
 @import 'primevue/resources/themes/lara-light-green/theme.css';
+@import 'primeicons/primeicons.css';
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
 
-* {
-  box-sizing: border-box;
-  font-size: 10px;
+html {
+  font-size: 62.5%;
 }
 
 body,
 ul,
 h1,
-h2 {
+h2,
+h3 {
   padding: 0;
   margin: 0;
+}
+
+table {
+
+  th,
+  td {
+    font-size: 1.3rem;
+  }
 }
 
 .container {
@@ -73,17 +84,13 @@ nav {
 
   ul {
     display: flex;
-    gap: 20px;
     text-transform: uppercase;
-    margin: 0;
-    padding: 0;
 
     .current {
       border-bottom: 3px solid #000;
     }
 
     a {
-      font-size: 1.3rem;
       text-decoration: none;
       color: #000;
       border-bottom: 3px solid #fff;
@@ -97,18 +104,13 @@ nav {
   }
 }
 
-p {
-  padding: 0;
-  margin: 0;
-}
-
 h1 {
   font-size: 2.5rem;
 }
 
 h2 {
   text-transform: uppercase;
-  font-size: 1.4rem;
+  font-size: 1.6rem;
 }
 
 .column h2 {
@@ -116,11 +118,72 @@ h2 {
 }
 
 h3 {
-  display: flex;
-  align-items: center;
-  font-size: 1.2rem;
-  width: 75px;
-  margin: 0;
+  font-size: 1.4rem;
+}
+
+.dialog {
+  .p-dialog-header {
+    padding: 3rem;
+
+    span,
+    div {
+      // font-size: 1.8rem;
+    }
+
+    button {
+      width: 30px;
+      height: 30px;
+    }
+
+    svg {
+      width: 1.4rem;
+      height: 1.4rem;
+    }
+  }
+
+  .p-dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+    padding-inline: 3rem;
+
+    p {
+      // font-size: 1.4rem;
+    }
+
+    button {
+      align-self: flex-end;
+
+      span {
+        // font-size: 1.4rem;
+      }
+    }
+  }
+
+
+}
+
+.cancel,
+.confirm {
+  color: #fff;
+  padding: 1rem;
+  font-family: 'Rubik', sans-serif;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.cancel {
+  background-color: tomato;
+}
+
+.confirm {
+  background-color: seagreen;
+
+  &:disabled {
+    background-color: lightgray;
+    cursor: auto;
+  }
 }
 
 .dp__main * {
@@ -129,15 +192,5 @@ h3 {
 
 .dp__action_button {
   font-size: 1.2rem !important;
-}
-
-@keyframes progress {
-  0% {
-    transform: translate3d(-100%, 0, 0);
-  }
-
-  100% {
-    transform: translate3d(100%, 0, 0);
-  }
 }
 </style>

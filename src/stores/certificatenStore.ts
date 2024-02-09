@@ -17,9 +17,13 @@ export const useCertificaatStore = defineStore('certificaten', () => {
     return certificaten.value.find((certificaat) => certificaat.id === id)
   }
 
+  const getCertificatenByKeuringId = (keuringId: string) => {
+    return certificaten.value.filter((certificaat) => certificaat.keuringID === keuringId)
+  }
+
   const empty = () => {
     certificaten.value = []
   }
 
-  return { certificaten, addCertificaat, removeCertificaat, getCertificaat, empty }
+  return { certificaten, addCertificaat, removeCertificaat, getCertificaat, getCertificatenByKeuringId, empty }
 })

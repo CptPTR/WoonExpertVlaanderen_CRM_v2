@@ -24,7 +24,7 @@ const handleSignIn = async (event: Event) => {
     if (error) {
         passwordErrorMessage.value = error.message
     } else {
-        authStore.setLoggedIn(true);
+        // authStore.setLoggedIn(true);
         router.push('/keuringen')
     }
 }

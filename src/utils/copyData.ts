@@ -1,26 +1,33 @@
-import type { FormKeuring } from '@/types'
+import type { Adres, FormKeuring, Klant } from '@/types'
 
-export const copyClientData = (keuringForm: FormKeuring) => {
+export const copyClientData = (keuringForm: FormKeuring, klanten: Klant[]) => {
+  const toCopyClient = klanten.find((klant) => klant.id === keuringForm.klantID)
+
   if (!keuringForm.facturatie.voornaam) {
-    keuringForm.facturatie.voornaam = keuringForm.voornaam
+    keuringForm.facturatie.voornaam = toCopyClient?.voornaam
   }
   if (!keuringForm.facturatie.achternaam) {
-    keuringForm.facturatie.achternaam = keuringForm.familienaam
+    keuringForm.facturatie.achternaam = toCopyClient?.achternaam
   }
   if (!keuringForm.facturatie.emailadres) {
-    keuringForm.facturatie.emailadres = keuringForm.emailadres
+    keuringForm.facturatie.emailadres = toCopyClient?.emailadres
   }
   if (!keuringForm.facturatie.telefoonnummer) {
-    keuringForm.facturatie.telefoonnummer = keuringForm.telefoonnummer
+    keuringForm.facturatie.telefoonnummer = toCopyClient?.telefoonnummer
   }
+}
+
+export const copyAddressData = (keuringForm: FormKeuring, adressen: Adres[]) => {
+  const toCopyAddress = adressen.find((adres) => adres.id === keuringForm.adresID)
+
   if (!keuringForm.facturatie.straatnaam) {
-    keuringForm.facturatie.straatnaam = keuringForm.straatnaam
+    keuringForm.facturatie.straatnaam = toCopyAddress?.straatnaam
   }
   if (!keuringForm.facturatie.nummer) {
-    keuringForm.facturatie.nummer = keuringForm.nummer
+    keuringForm.facturatie.nummer = toCopyAddress?.nummer
   }
   if (keuringForm.facturatie.vlaamse_stad) {
-    keuringForm.facturatie.vlaamse_stad = keuringForm.vlaamse_stad
+    keuringForm.facturatie.vlaamse_stad = toCopyAddress?.vlaamse_stad
     // if (!keuringForm.facturatie.vlaamse_stad.gemeente) {
     //   keuringForm.facturatie.vlaamse_stad.gemeente = keuringForm.vlaamse_stad.gemeente
     // }

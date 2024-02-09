@@ -1,86 +1,40 @@
 <script setup lang="ts">
+import KeuringenItem from "@/components/KeuringenItem.vue";
 import { supabase } from "@/config/supabase";
 import { Status } from "@/enums/modules/Status";
 import router from "@/router";
-import { useKeuringStore } from "@/stores/keuringenStore";
-import { useVlaamseStedenStore } from "@/stores/vlaamseStedenStore";
-import type { Keuring } from "@/types";
+import { useCertificaatStore } from "@/stores/certificatenStore";
+import { useExtraDocumentStore } from "@/stores/extraDocumentenStore";
+import { useKeuringenStore } from "@/stores/keuringenStore";
+import type { KeuringData } from "@/types";
 import { Icon } from "@iconify/vue";
-import { computed, onMounted, ref } from "vue";
-import KeuringenItem from "../components/KeuringenItem.vue";
+import Image from "primevue/image";
+import { computed, onBeforeMount, ref } from "vue";
 
-const keuringStore = useKeuringStore()
-const vlaamseStedenStore = useVlaamseStedenStore()
+const keuringenStore = useKeuringenStore()
+const certificatenStore = useCertificaatStore()
+const extraDocumentenStore = useExtraDocumentStore()
 
 const filterOp = ref<string>("");
 const currentPage = ref<number>(1);
 const MAX_ROWS = 9;
-
-const getLijstGemeenten = async () => {
-  const { data } = await supabase.from('vlaamse_steden').select()
-
-  if (data) {
-    data.map((vlaamseStad) => {
-      vlaamseStedenStore.addStad({
-        id: vlaamseStad.id,
-        gemeente: vlaamseStad.gemeente,
-        stad: vlaamseStad.stad,
-        provincie: vlaamseStad.provincie
-      })
-    })
-  }
-}
-
-const getKeuringData = async () => {
-  const { data } = await supabase
-    .from('keuringen')
-    .select("*, created_by: gebruikers(*, organisatie: organisaties(*)), klant: klanten(*), adres: adressen(*, vlaamse_stad: vlaamse_steden(*))");
-
-  if (data) {
-    data.map(keuring => {
-      keuringStore.addKeuring({
-        id: keuring.id,
-        klant: {
-          id: keuring.klant.id,
-          voornaam: keuring.klant.voornaam,
-          achternaam: keuring.klant.achternaam,
-          emailadres: keuring.klant.emailadres,
-          telefoonnummer: keuring.klant.telefoonnummer
-        },
-        adres: {
-          id: keuring.adres.id,
-          straatnaam: keuring.adres.straatnaam,
-          nummer: keuring.adres.nummer,
-          vlaamse_stad: keuring.adres.vlaamse_stad,
-        },
-
-        status: keuring.status,
-        type: keuring.type,
-        toegang_eenheid: keuring.toegang_eenheid,
-        datum_toewijzing: new Date(keuring.created_at),
-        datum_plaatsbezoek: new Date(keuring.datum_plaatsbezoek),
-        created_by: keuring.created_by,
-        opmerking: keuring.opmerking,
-        facturatie: null,
-      })
-    })
-  }
-}
 
 const finalKeuringen = computed(() => {
   return filterKeuringen().sort(sortKeuringen);
 })
 
 const filterKeuringen = () => {
-  return keuringStore.keuringen.filter((keuring) => {
+  return keuringenStore.keuringen.filter((keuring) => {
     if (keuring.klant) {
-      return keuring.klant.voornaam.includes(filterOp.value) || keuring.adres.straatnaam.includes(filterOp.value)
+      return (
+        `${keuring.klant.voornaam} ${keuring.klant.achternaam}`.toLowerCase().includes(filterOp.value.toLowerCase()) ||
+        keuring.adres.straatnaam.toLowerCase().includes(filterOp.value.toLowerCase())
+      )
     }
-    return false
   })
 }
 
-const sortKeuringen = (keuringA: Keuring, keuringB: Keuring) => {
+const sortKeuringen = (keuringA: KeuringData, keuringB: KeuringData) => {
   const statusOrder = {
     [Status.NIEUW]: 1,
     [Status.INGEPLAND]: 2,
@@ -110,7 +64,7 @@ const sortKeuringen = (keuringA: Keuring, keuringB: Keuring) => {
   }
 
   if (keuringA.status === Status.NIEUW || keuringA.status === Status.CERTIFICAAT_BESCHIKBAAR) {
-    return -dateComparator(keuringA.datum_toewijzing, keuringB.datum_toewijzing);
+    return -dateComparator(new Date(keuringA.datum_toewijzing), new Date(keuringB.datum_toewijzing));
   }
 
   return 0
@@ -144,7 +98,7 @@ const deleteKeuring = async (id: string) => {
   if (error) {
     console.error(`Could not delete keuring with id ${id} from the database.`)
   } else {
-    keuringStore.removeKeuring(id)
+    keuringenStore.removeKeuring(id)
   }
 }
 
@@ -160,15 +114,6 @@ const goToPage = (index: number) => {
   currentPage.value = index;
 }
 
-onMounted(() => {
-  if (!keuringStore.keuringen.length) {
-    getKeuringData()
-  }
-  if (!vlaamseStedenStore.vlaamse_steden.length) {
-    getLijstGemeenten()
-  }
-})
-
 </script>
 
 <template>
@@ -177,7 +122,7 @@ onMounted(() => {
       <h1>Keuringen</h1>
       <div class="add-searchbar">
         <div class="add-keuring" @click="addKeuring">
-          <Icon icon="mdi:add" width="15" />
+          <Icon icon="mdi:plus" width="15" />
         </div>
         <div class="searchbar">
           <Icon icon="mdi:magnify" width="24" color="lightgrey" class="icon" />
@@ -187,31 +132,36 @@ onMounted(() => {
       </div>
     </div>
     <div class="table-wrapper">
-      <table v-if="keuringStore.keuringen.length !== 0">
-        <tr>
-          <th>datum <br /> toewijzing</th>
-          <th>aangemaakt door</th>
-          <th>klant</th>
-          <th>adres</th>
-          <th>type</th>
-          <th>status</th>
-          <th>acties</th>
-        </tr>
-        <tr v-for="keuring in finalKeuringen.slice((MAX_ROWS * currentPage) - MAX_ROWS, MAX_ROWS * currentPage)"
-          :key="keuring.id">
-          <KeuringenItem :keuring="keuring" @view-keuring="viewKeuring" @edit-keuring="editKeuring"
-            @delete-keuring="deleteKeuring" />
-        </tr>
-      </table>
-      <div v-else>
-        <p>Helaas, geen keuringen gevonden!</p>
+      <div v-if="keuringenStore.keuringen.length !== 0">
+        <table>
+          <tr>
+            <th>datum <br /> toewijzing</th>
+            <th>aangemaakt door</th>
+            <th>type</th>
+            <th>klant</th>
+            <th>adres</th>
+            <th>status</th>
+            <th></th>
+          </tr>
+          <tr v-for="keuring in finalKeuringen.slice((MAX_ROWS * currentPage) - MAX_ROWS, MAX_ROWS * currentPage)"
+            :key="keuring.id">
+            <KeuringenItem :keuring="keuring" @view-keuring="viewKeuring" @edit-keuring="editKeuring"
+              @delete-keuring="deleteKeuring" />
+          </tr>
+        </table>
       </div>
-      <div class="pagination" v-if="keuringStore.keuringen.length > 0">
+      <div v-else>
+        <div class="geen-keuringen-gevonden">
+          <Image src="/keuring_niet_gevonden.png" alt="geen keuringen gevonden" width="500" />
+          <p>Helaas, geen keuringen gevonden!</p>
+        </div>
+      </div>
+      <div class="pagination" v-if="keuringenStore.keuringen.length > 0">
         <button class="previous" @click="goBack" :disabled="currentPage === 1">
           <Icon icon="ic:twotone-less-than" color="#000" width="15" />
         </button>
         <button v-for="index in totalPages" :key="index" @click="goToPage(index)"
-          :style="index === currentPage ? { backgroundColor: 'green', color: '#fff' } : undefined"
+          :style="index === currentPage ? { backgroundColor: 'seagreen', color: '#fff' } : undefined"
           :disabled="index === currentPage">
           {{ index }}
         </button>
@@ -246,15 +196,53 @@ onMounted(() => {
     cursor: pointer;
 
     .add-keuring {
+      position: relative;
       display: flex;
       justify-content: center;
       align-items: center;
-      background-color: green;
+      background-color: seagreen;
       color: #fff;
       margin-right: 1rem;
-      width: 4rem;
-      height: 4rem;
+      padding: 1rem;
       border-radius: 5px;
+    }
+
+    .type-keuringen {
+      background-color: #fff;
+      position: absolute;
+      top: 5rem;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid seagreen;
+      border-radius: 5px;
+      user-select: none;
+
+      button {
+        background-color: seagreen;
+        color: #fff;
+        width: 125px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        padding: 1rem;
+        border: none;
+        cursor: pointer;
+
+        &:hover {
+          background-color: #fff;
+          color: seagreen;
+        }
+
+        &:first-child {
+          border-top-left-radius: 5px;
+          border-top-right-radius: 5px;
+        }
+
+        &:last-child {
+          border-bottom-left-radius: 5px;
+          border-bottom-right-radius: 5px;
+        }
+      }
     }
 
     .searchbar {
@@ -275,16 +263,13 @@ onMounted(() => {
 
       input {
         width: 500px;
-        height: 40px;
+        padding: 1rem;
         background-color: #fff;
         border-radius: inherit;
         outline: none;
         border: none;
         padding-left: 40px;
         padding-right: 16px;
-        align-self: flex-end;
-        font-size: 1.3rem;
-
       }
     }
   }
@@ -309,7 +294,6 @@ onMounted(() => {
       th {
         padding: 10px 20px;
         text-transform: uppercase;
-        font-size: 1.3rem;
 
         &:last-of-type {
           text-align: right;
@@ -323,6 +307,12 @@ onMounted(() => {
 
     button {
       display: flex;
+    }
+  }
+
+  .acties {
+    span {
+      cursor: pointer;
     }
   }
 
@@ -343,7 +333,6 @@ onMounted(() => {
 
     button {
       cursor: pointer;
-      font-size: 1.3rem;
       font-weight: bold;
       font-family: "Rubik", sans-serif;
       width: 35px;
@@ -354,6 +343,86 @@ onMounted(() => {
 
       &:disabled {
         cursor: not-allowed;
+      }
+    }
+  }
+
+  .geen-keuringen-gevonden {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    p {
+      // font-size: 1.6rem;
+    }
+  }
+}
+
+.modal {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  position: fixed;
+  z-index: 1100;
+  top: 0;
+  left: 0;
+  font-family: "Rubik", sans-serif;
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    width: 450px;
+    gap: 20px;
+    align-items: flex-start;
+    border-radius: 5px;
+    background-color: #fff;
+    padding: 3rem;
+
+    h2 {
+      font-size: 2rem;
+      width: 100%;
+    }
+
+    ul {
+      margin-block: 1rem;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding-left: 1rem;
+
+      li {
+        font-size: 1.3rem;
+        line-height: 1.6rem;
+      }
+    }
+
+    .actions {
+      align-self: flex-end;
+      display: flex;
+      gap: 7px;
+
+      * {
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1.4rem;
+      }
+
+      .cancel {
+        background-color: grey;
+        color: #fff;
+        font-family: "Rubik", sans-serif;
+      }
+
+      .delete {
+        background-color: #DC3545;
+        color: #fff;
+        font-family: "Rubik", sans-serif;
       }
     }
   }

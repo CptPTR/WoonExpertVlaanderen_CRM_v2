@@ -1,30 +1,35 @@
 <script setup lang="ts">
 import { Status } from "@/enums/modules/Status";
-import { formatDate } from "@/utils/formatting";
 import { getStatusColor } from "@/utils/colors";
+import { formatDate } from "@/utils/formatting";
 import { Icon } from "@iconify/vue";
+import { vOnClickOutside } from '@vueuse/components';
 import { ref } from "vue";
-import type { Keuring } from "../types";
+import type { KeuringData } from "../types";
 
-const emit = defineEmits(['view-keuring', 'edit-keuring', 'delete-keuring'])
+const emit = defineEmits(['view-keuring', 'duplicate-keuring', 'edit-keuring', 'delete-keuring'])
 
 const { keuring } = defineProps<{
-    keuring: Keuring
+    keuring: KeuringData,
 }>()
 
-const isBinOpen = ref(false)
 const isDeleteConfirmationOpen = ref(false)
+const isActionsMenuOpen = ref<boolean>(false);
 
-const showOpenBin = () => {
-    isBinOpen.value = true;
-}
+const toggleActionsMenu = () => {
+    isActionsMenuOpen.value = !isActionsMenuOpen.value;
+};
 
-const showClosedBin = () => {
-    isBinOpen.value = false;
+const closeActionsMenu = () => {
+    isActionsMenuOpen.value = false
 }
 
 const viewKeuring = () => {
     emit('view-keuring', keuring.id)
+}
+
+const duplicateKeuring = () => {
+    emit('duplicate-keuring', keuring.id)
 }
 
 const editKeuring = () => {
@@ -34,17 +39,21 @@ const editKeuring = () => {
 const deleteKeuring = () => {
     emit('delete-keuring', keuring.id)
 }
+
 </script>
 
 <template>
     <td v-if="keuring.datum_toewijzing">
-        {{ new Date(keuring.datum_toewijzing).toLocaleDateString("nl-BE", {
-            day: "2-digit", month: "2-digit", year:
-                "numeric", hour: "numeric", minute: "numeric"
-        }) }}
+        {{ keuring.datum_toewijzing.toLocaleString("nl-BE", {
+            timeZone: "Europe/Brussels", day: "numeric", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit"
+        })
+        }}
     </td>
     <td>
         {{ keuring.created_by.organisatie.naam }}
+    </td>
+    <td v-if="keuring.type">
+        {{ keuring.type.toUpperCase() }}
     </td>
     <td class="klant" v-if="keuring.klant">
         <span class="naam">
@@ -64,14 +73,10 @@ const deleteKeuring = () => {
             {{ keuring.adres.vlaamse_stad.gemeente }}
         </span>
     </td>
-    <td v-if="keuring.type">
-        {{ keuring.type.toUpperCase() }}
-    </td>
     <td>
         <div class="status" :style="{ backgroundColor: getStatusColor(keuring.status) }">
-
             <template v-if="keuring.status === Status.INGEPLAND && keuring.datum_plaatsbezoek">
-                {{ formatDate(new Date(keuring.datum_plaatsbezoek)) }}
+                {{ keuring.status + ' op ' + formatDate(new Date(keuring.datum_plaatsbezoek)) }}
             </template>
             <template v-else>
                 {{ keuring.status }}
@@ -79,86 +84,86 @@ const deleteKeuring = () => {
         </div>
     </td>
     <td class="actions">
-        <span title="keuring bekijken" @click="viewKeuring">
-            <Icon icon="mdi:open-in-new" color="grey" width="24" />
+        <span title="keuring bekijken" @click="toggleActionsMenu">
+            <Icon icon="mdi:dots-vertical" color="grey" width="24" />
         </span>
-        <span title="keuring aanpassen" @click="editKeuring">
-            <Icon icon="mdi:edit" color="grey" width="24" />
-        </span>
-        <span title="keuring verwijderen" @mouseenter="showOpenBin" @mouseleave="showClosedBin"
-            @click="isDeleteConfirmationOpen = true">
-            <Icon v-show="!isBinOpen" icon="mdi:bin" color="grey" width="24" />
-            <Icon v-show="isBinOpen" icon="mdi:bin-empty" color="grey" width="24" />
+        <div v-if="isActionsMenuOpen" class="menu" v-on-click-outside="closeActionsMenu">
+            <ul>
+                <li @click="viewKeuring">
+                    <Icon icon="mdi:file-search" width="14" />
+                    Bekijken
+                </li>
+                <li @click="duplicateKeuring">
+                    <Icon icon="mdi:content-copy" width="14" />
+                    Dupliceren
+                </li>
+                <li @click="editKeuring">
+                    <Icon icon="mdi:pencil" width="14" />
+                    Aanpassen
+                </li>
+                <li @click="isDeleteConfirmationOpen = true; isActionsMenuOpen = false">
+                    <Icon icon="mdi:delete" width="14" />
+                    Verwijderen
+                </li>
 
-            <Teleport to="body">
-                <div v-if="isDeleteConfirmationOpen" class="modal">
-                    <div class="content">
-                        <h2>Bent u zeker dat u deze keuring wilt verwijderen?</h2>
-                        <ul>
-                            <li>
-                                {{ keuring.type?.toUpperCase() }}
-                            </li>
-                            <li>
-                                {{ keuring.status }}
-                            </li>
-                            <li v-if="keuring.datum_plaatsbezoek">
-                                - {{ keuring.datum_plaatsbezoek ? new
-                                    Date(keuring.datum_plaatsbezoek).toLocaleDateString("nl-BE") : "" }}
-                            </li>
-                            <li v-else>
-                                Datum plaatsbezoek (nog) niet ingepland
-                            </li>
-                            <li>
-                                {{ keuring.adres?.straatnaam + " " + keuring.adres?.nummer + ", " +
-                                    keuring.adres?.vlaamse_stad.gemeente
-                                }}
-                            </li>
-                            <li>
-                                {{ keuring.klant.voornaam + " " + keuring.klant.achternaam }}
-                            </li>
-                            <li>
-                                - {{ keuring.klant.telefoonnummer }}
-                            </li>
-                            <li>
-                                - {{ keuring.klant.emailadres }}
-                            </li>
-                        </ul>
-                        <div class="actions">
-                            <button class="cancel" title="Annuleer"
-                                @click="isDeleteConfirmationOpen = false">Annuleer</button>
-                            <button class="delete" title="Verwijder keuring" @click="deleteKeuring">Verwijder
-                                keuring</button>
-                        </div>
+            </ul>
+        </div>
+        <Teleport to="body">
+            <div v-if="isDeleteConfirmationOpen" class="modal">
+                <div class="content">
+                    <h2>Bent u zeker dat u deze keuring wilt verwijderen?</h2>
+                    <ul v-if="keuring">
+                        <li>
+                            {{ keuring.type.toUpperCase() }}
+                        </li>
+                        <li>
+                            {{ keuring.status }}
+                        </li>
+                        <li v-if="keuring.datum_plaatsbezoek">
+                            - {{ keuring.datum_plaatsbezoek }}
+                        </li>
+                        <li v-else>
+                            Datum plaatsbezoek (nog) niet ingepland
+                        </li>
+                        <li>
+                            {{ keuring.adres.straatnaam + " " + keuring.adres.nummer + ", " +
+                                keuring.adres.vlaamse_stad.gemeente
+                            }}
+                        </li>
+                        <li>
+                            {{ keuring.klant.voornaam + " " + keuring.klant.achternaam }}
+                        </li>
+                        <li>
+                            - {{ keuring.klant.telefoonnummer }}
+                        </li>
+                        <li>
+                            - {{ keuring.klant.emailadres }}
+                        </li>
+                    </ul>
+                    <div class="actions">
+                        <button class="cancel" title="Annuleer" @click="isDeleteConfirmationOpen = false">Annuleer</button>
+                        <button class="delete" title="Verwijder keuring" @click="deleteKeuring">Verwijder keuring</button>
                     </div>
                 </div>
-                <template v-else />
-            </Teleport>
-        </span>
+            </div>
+            <template v-else />
+        </Teleport>
     </td>
 </template>
 
 
 <style lang="scss" scoped>
 td {
-    font-size: 1.3rem;
-    padding: 20px;
+    padding: 15px 20px;
 }
 
-.klant {
-    .naam {
-        font-size: 1.3rem;
-        font-weight: bold;
-    }
-}
-
-.adres {
-    .straatnaam-nummer {
-        font-size: 1.3rem;
-        font-weight: bold;
-    }
+.naam,
+.straatnaam-nummer {
+    font-weight: bold;
 }
 
 .actions {
+    position: relative;
     gap: 2px;
     text-align: right;
 
@@ -167,12 +172,39 @@ td {
         margin-left: 5px;
         cursor: pointer;
     }
+
+    .menu {
+        position: absolute;
+        right: 20px;
+        z-index: 5;
+        border: 1px solid lightgray;
+    }
+
+    ul {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            cursor: pointer;
+            font-size: 1.1rem;
+            background-color: #fff;
+
+            &:hover {
+                background-color: seagreen;
+                color: #fff;
+            }
+        }
+    }
 }
 
 .status {
-    font-size: 1.3rem;
     width: fit-content;
-    padding: 1.2rem 2rem;
+    padding: 1rem 1.5rem;
     border-radius: 45px;
     color: #fff;
 }
@@ -246,4 +278,4 @@ td {
         }
     }
 }
-</style>@/utils/colors
+</style>
