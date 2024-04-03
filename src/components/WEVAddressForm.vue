@@ -16,15 +16,8 @@
 
   const form = ref<FormKeuring>(props.form)
 
-  const formAdres = computed(() => {
-    return adressenStore.getAdres(form.value.vlaamse_stad_ID)
-  })
-
   const isAddressDuplicate = computed(() => {
-    return (
-      adressenStore.adressen.filter((adres: Adres) => adres.straatnaam === form.value.straatnaam && adres.nummer === form.value.nummer && adres.vlaamse_stad_ID === formAdres.value.vlaamse_stad_ID)
-        .length !== 0
-    )
+    return adressenStore.adressen.filter((adres: Adres) => adres.straatnaam === form.value.straatnaam && adres.nummer === form.value.nummer).length !== 0
   })
 
   const addAddress = async () => {
@@ -34,7 +27,7 @@
         {
           straatnaam: form.value.straatnaam,
           nummer: form.value.nummer,
-          vlaamse_stad_ID: formAdres.value.id
+          vlaamse_stad_ID: form.value.vlaamse_stad_ID
         }
       ])
       .select('*, vlaamse_stad: vlaamse_steden(*)')
@@ -55,7 +48,7 @@
 
 <template>
   <section class="adres">
-    <h2>Adres {{ formAdres }}</h2>
+    <h2>Adres</h2>
     <div class="content">
       <div class="form" style="width: 325px">
         <ul>
@@ -63,7 +56,6 @@
             <Dropdown
               v-model="form.vlaamse_stad_ID"
               filter
-              auto-filter-focus
               :options="vlaamseStedenStore.vlaamse_steden"
               :virtual-scroller-options="{ itemSize: 38 }"
               optionLabel="gemeente"
@@ -91,7 +83,7 @@
         v-if="form.vlaamse_stad_ID"
         :selectedAdres="form.adresID"
         @select-adres="(id: string) => $emit('selectAddress', id)"
-        :adressen="adressenStore.adressen.filter((adres: Adres) => adres.vlaamse_stad_ID == form.vlaamse_stad_ID && adres.straatnaam.toLowerCase().includes(form.straatnaam.toLowerCase()))"
+        :adressen="adressenStore.adressen.filter((adres: Adres) => `${adres.straatnaam.toLowerCase()} ${adres.nummer}`.includes(`${form.straatnaam.toLowerCase()} ${form.nummer}`))"
       />
     </div>
   </section>
