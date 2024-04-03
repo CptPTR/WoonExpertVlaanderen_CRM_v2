@@ -18,10 +18,11 @@ export type Klant = {
 }
 
 export type Adres = {
-  id?: string
+  id: string
   straatnaam: string
   nummer: string
-  vlaamse_stad: VlaamseStad
+  //vlaamse_stad: VlaamseStad
+  vlaamse_stad_ID: string
 }
 
 export type VlaamseStad = {
@@ -81,7 +82,8 @@ export type Facturatie = {
   telefoonnummer: string
   straatnaam: string
   nummer: string
-  vlaamse_stad: VlaamseStad
+  // vlaamse_stad: VlaamseStad | string
+  vlaamse_stad_ID: string
   organisatie?: string | null
 }
 
@@ -115,7 +117,8 @@ export type FormKeuring = {
 
   straatnaam: string
   nummer: string
-  vlaamse_stad: VlaamseStad
+  // vlaamse_stad: VlaamseStad
+  vlaamse_stad_ID: string
 
   status: Status
   opmerking: string

@@ -3,7 +3,13 @@
     "declaration": true,
     "target": "es5",
     "module": "commonjs",
-    "strict": true
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    }
   },
   "files": [],
   "references": [
@@ -14,5 +20,9 @@
       "path": "./tsconfig.app.json"
     }
   ],
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/types/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/types/**/*.ts"
+  ]
 }

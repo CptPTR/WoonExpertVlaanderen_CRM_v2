@@ -9,8 +9,8 @@ export const useCertificaatStore = defineStore('certificaten', () => {
     certificaten.value.push(certificaat)
   }
 
-  const removeCertificaat = (id: string) => {
-    certificaten.value = certificaten.value.filter((certificaat) => certificaat.id !== id)
+  const removeCertificaat = (name: string) => {
+    certificaten.value = certificaten.value.filter((certificaat) => certificaat.naam !== name)
   }
 
   const getCertificaat = (id: string) => {

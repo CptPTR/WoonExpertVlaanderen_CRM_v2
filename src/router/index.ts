@@ -6,12 +6,15 @@ import { useKeuringenStore } from '@/stores/keuringenStore'
 import { useKlantenStore } from '@/stores/klantenStore'
 import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
 import type { Adres, Facturatie, Klant } from '@/types'
+import ResetPasswordRequestView from '@/views/ResetPasswordRequest.vue'
+import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import { createRouter, createWebHistory, type NavigationGuard } from 'vue-router'
 import KeuringAddView from '../views/KeuringAddView.vue'
 import KeuringEditView from '../views/KeuringEditView.vue'
 import KeuringView from '../views/KeuringView.vue'
 import KeuringenView from '../views/KeuringenView.vue'
 import LoginView from '../views/LoginView.vue'
+import NotFoundView from '@/views/NotFoundView.vue'
 
 const checkSession: NavigationGuard = async (to, from, next) => {
   const {
@@ -57,8 +60,9 @@ const getKeuringData = async () => {
           id: keuring.adres.id,
           straatnaam: keuring.adres.straatnaam,
           nummer: keuring.adres.nummer,
-          vlaamse_stad: keuring.adres.vlaamse_stad
+          vlaamse_stad_ID: keuring.adres.vlaamse_stad_ID
         },
+        // facturatie: keuring.facturatie_ID,
         facturatie: keuring.facturatie
           ? {
               id: keuring.facturatie.id,
@@ -68,7 +72,7 @@ const getKeuringData = async () => {
               telefoonnummer: keuring.facturatie.telefoonnummer,
               straatnaam: keuring.facturatie.straatnaam,
               nummer: keuring.facturatie.nummer,
-              vlaamse_stad: keuring.facturatie.vlaamse_stad,
+              vlaamse_stad_ID: keuring.facturatie.vlaamse_stad_ID,
               organisatie: keuring.facturatie.organisatieID
             }
           : null,
@@ -81,9 +85,6 @@ const getKeuringData = async () => {
         opmerking: keuring.opmerking,
         facturatie_bestemming: keuring.facturatie_bestemming
       })
-
-      // await getCertificatenData(keuring.id)
-      // await getExtraDocumentenData(keuring.adres_ID)
     })
   }
 }
@@ -100,13 +101,14 @@ const getAdressenData = async () => {
         id: adres.id,
         straatnaam: adres.straatnaam,
         nummer: adres.nummer,
-        vlaamse_stad: {
-          id: adres.vlaamse_stad.id,
-          gemeente: adres.vlaamse_stad.gemeente,
-          stad: adres.vlaamse_stad.stad,
-          provincie: adres.vlaamse_stad.provincie,
-          postcode: adres.vlaamse_stad.postcode
-        }
+        // vlaamse_stad: {
+        //   id: adres.vlaamse_stad.id,
+        //   gemeente: adres.vlaamse_stad.gemeente,
+        //   stad: adres.vlaamse_stad.stad,
+        //   provincie: adres.vlaamse_stad.provincie,
+        //   postcode: adres.vlaamse_stad.postcode
+        // }
+        vlaamse_stad_ID: adres.vlaamse_stad_ID
       })
     })
   }
@@ -147,13 +149,14 @@ const getFacturatiesData = async () => {
         telefoonnummer: fac.telefoonnummer,
         straatnaam: fac.straatnaam,
         nummer: fac.nummer,
-        vlaamse_stad: {
-          id: fac.vlaamse_stad.id,
-          gemeente: fac.vlaamse_stad.gemeente,
-          stad: fac.vlaamse_stad.stad,
-          provincie: fac.vlaamse_stad.provincie,
-          postcode: fac.vlaamse_stad.postcode
-        },
+        vlaamse_stad_ID: fac.vlaamse_stad_ID,
+        // vlaamse_stad: {
+        //   id: fac.vlaamse_stad.id,
+        //   gemeente: fac.vlaamse_stad.gemeente,
+        //   stad: fac.vlaamse_stad.stad,
+        //   provincie: fac.vlaamse_stad.provincie,
+        //   postcode: fac.vlaamse_stad.postcode
+        // },
         organisatie: fac.organisatie
       })
     })
@@ -188,6 +191,16 @@ const router = createRouter({
       beforeEnter: checkSession
     },
     {
+      path: '/reset-password-request',
+      name: 'reset-password-request',
+      component: ResetPasswordRequestView
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: ResetPasswordView
+    },
+    {
       path: '/',
       name: 'home',
       redirect: '/keuringen'
@@ -220,11 +233,20 @@ const router = createRouter({
       path: '/keuringen/add',
       component: KeuringAddView,
       beforeEnter: checkSession
+    },
+    {
+      path: '/404',
+      name: '404',
+      component: NotFoundView
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/404'
     }
   ]
 })
 
-router.beforeEach(async (to, from) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore()
 
   if (to.path.startsWith('/keuringen')) {
@@ -255,7 +277,7 @@ router.beforeEach(async (to, from) => {
     }
   }
 
-  if (to.name === 'login' || authStore.currentlyLoggedIn) return
+  if (to.name === 'login' || to.name === 'reset-password-request' || to.name === 'reset-password' || authStore.currentlyLoggedIn) return
 
   const {
     data: { user }

@@ -1,30 +1,29 @@
 <script lang="ts" setup>
-defineEmits(['selectKlant'])
+  defineEmits(['selectKlant'])
 
-const props = defineProps(["selectedKlant", "klanten"])
+  const props = defineProps(['selectedKlant', 'klanten'])
 </script>
 
 <template>
-    <div class="client-list-wrapper">
-        <h3>Klantenlijst</h3>
-        <ul class="client-list flex-col">
-            <li v-for="klant in klanten" :key="klant.id" :class='props.selectedKlant === klant.id ? "highlight" : ""'>
-                <div v-if="klant.id" @click="$emit('selectKlant', klant.id)">
-                    {{ `${klant.voornaam} ${klant.achternaam} - ${klant.emailadres}` }}
-                </div>
-            </li>
-
-        </ul>
-    </div>
+  <div class="client-list-wrapper">
+    <h3>Klantenlijst</h3>
+    <ul class="client-list flex-col">
+      <li v-for="klant in klanten" :key="klant.id" :class="props.selectedKlant === klant.id ? 'highlight' : ''">
+        <div v-if="klant.id" @click="$emit('selectKlant', klant.id)">
+          {{ `${klant.voornaam} ${klant.achternaam} - ${klant.emailadres}` }}
+        </div>
+      </li>
+    </ul>
+  </div>
 </template>
 
 <style lang="scss" scoped>
-.client-list-wrapper {
+  .client-list-wrapper {
     margin-block: 3rem;
     flex: 1;
-}
+  }
 
-.client-list {
+  .client-list {
     display: flex;
     flex-direction: column;
     gap: 7px;
@@ -34,34 +33,34 @@ const props = defineProps(["selectedKlant", "klanten"])
     max-height: 336px;
     overflow: auto;
     padding-right: 1rem;
-}
+  }
 
-li {
+  li {
     border: 1px solid #000;
     border-radius: 5px;
 
-    >div {
-        padding: 1rem;
-        font-size: 1.1rem;
+    > div {
+      padding: 1rem;
+      font-size: 1.1rem;
 
-        &:hover {
-            background-color: seagreen;
-            color: #fff;
-        }
+      &:hover {
+        background-color: seagreen;
+        color: #fff;
+      }
     }
 
     &:hover {
-        border-color: seagreen;
+      border-color: seagreen;
     }
 
     &:hover:not(.highlight) {
-        cursor: pointer;
+      cursor: pointer;
     }
-}
+  }
 
-.highlight {
+  .highlight {
     border-color: seagreen;
     background-color: seagreen;
     color: #fff;
-}
+  }
 </style>

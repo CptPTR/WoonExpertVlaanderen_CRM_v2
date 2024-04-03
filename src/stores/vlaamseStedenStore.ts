@@ -9,6 +9,10 @@ export const useVlaamseStedenStore = defineStore('vlaamse_steden', () => {
     return vlaamse_steden.value.find((vlaamse_stad) => vlaamse_stad.id === id)
   }
 
+  const getStadById = (id: string) => {
+    return vlaamse_steden.value.find((vlaamse_stad) => vlaamse_stad.id === id)
+  }
+
   const getStadDataByGemeente = (gemeente: string) => {
     return vlaamse_steden.value.find((vlaamse_stad) => vlaamse_stad.gemeente === gemeente)!
   }
@@ -21,5 +25,5 @@ export const useVlaamseStedenStore = defineStore('vlaamse_steden', () => {
     vlaamse_steden.value = []
   }
 
-  return { vlaamse_steden, addStad, getStad, getStadDataByGemeente, empty }
+  return { vlaamse_steden, addStad, getStad, getStadById, getStadDataByGemeente, empty }
 })

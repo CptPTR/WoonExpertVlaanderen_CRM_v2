@@ -4,14 +4,14 @@ import { ref, type Ref } from 'vue'
 
 export const useKeuringenStore = defineStore('keuringen', () => {
   const keuringen: Ref<KeuringData[]> = ref([])
-  const currentlyOpenedKeuring: Ref<string | null> = ref(null)
 
   const addKeuring = (keuring: KeuringData) => {
     keuringen.value.push(keuring)
   }
 
-  const addCurrentlyOpenedKeuring = (id: string) => {
-    currentlyOpenedKeuring.value = id
+  const editKeuring = (index: string, keuring: KeuringData) => {
+    removeKeuring(index)
+    addKeuring(keuring)
   }
 
   const removeKeuring = (id: string) => {
@@ -28,9 +28,8 @@ export const useKeuringenStore = defineStore('keuringen', () => {
 
   return {
     keuringen,
-    currentlyOpenedKeuring,
     addKeuring,
-    addCurrentlyOpenedKeuring,
+    editKeuring,
     removeKeuring,
     getKeuring,
     empty

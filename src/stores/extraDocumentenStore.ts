@@ -9,8 +9,8 @@ export const useExtraDocumentStore = defineStore('extra_documenten', () => {
     extra_documenten.value.push(extraDocument)
   }
 
-  const removeExtraDocument = (id: string) => {
-    extra_documenten.value = extra_documenten.value.filter((document) => document.id !== id)
+  const removeExtraDocument = (name: string) => {
+    extra_documenten.value = extra_documenten.value.filter((document) => document.naam !== name)
   }
 
   const getExtraDocument = (id: string) => {
