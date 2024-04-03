@@ -14,13 +14,7 @@
   const vlaamseStedenStore = useVlaamseStedenStore()
   const adressenStore = useAdressenStore()
 
-  enum PROVINCIES {
-    ANTWERPEN = 'Antwerpen',
-    VLAAMS_BRABANT = 'Vlaams-Brabant'
-  }
-
   const form = ref<FormKeuring>(props.form)
-  const provincie = ref<PROVINCIES>(PROVINCIES.ANTWERPEN)
 
   const formAdres = computed(() => {
     return adressenStore.getAdres(form.value.vlaamse_stad_ID)
@@ -31,10 +25,6 @@
       adressenStore.adressen.filter((adres: Adres) => adres.straatnaam === form.value.straatnaam && adres.nummer === form.value.nummer && adres.vlaamse_stad_ID === formAdres.value.vlaamse_stad_ID)
         .length !== 0
     )
-  })
-
-  const filteredGemeentenOpProvincies = computed(() => {
-    return vlaamseStedenStore.vlaamse_steden.filter((stad) => stad.provincie === provincie.value)
   })
 
   const addAddress = async () => {
@@ -56,29 +46,10 @@
           id: adres.id,
           straatnaam: adres.straatnaam,
           nummer: adres.nummer,
-          // vlaamse_stad: {
-          //   id: adres.vlaamse_stad.id,
-          //   gemeente: adres.vlaamse_stad.gemeente,
-          //   stad: adres.vlaamse_stad.stad,
-          //   provincie: adres.vlaamse_stad.provincie,
-          //   postcode: adres.vlaamse_stad.postcode
-          // }
           vlaamse_stad_ID: adres.vlaamse_stad_ID
         })
       })
     }
-  }
-
-  const handleProvincieChange = () => {
-    // form.value.vlaamse_stad = {
-    //   id: '',
-    //   gemeente: '',
-    //   stad: '',
-    //   postcode: '',
-    //   provincie: ''
-    // }
-
-    form.value.vlaamse_stad_ID = ''
   }
 </script>
 
@@ -89,15 +60,12 @@
       <div class="form" style="width: 325px">
         <ul>
           <li>
-            <span>Provincie</span>
-            <Dropdown v-model="provincie" :options="['Antwerpen', 'Vlaams Brabant']" @change="handleProvincieChange" />
-          </li>
-          <li>
             <Dropdown
               v-model="form.vlaamse_stad_ID"
               filter
               auto-filter-focus
-              :options="filteredGemeentenOpProvincies"
+              :options="vlaamseStedenStore.vlaamse_steden"
+              :virtual-scroller-options="{ itemSize: 38 }"
               optionLabel="gemeente"
               optionValue="id"
               placeholder="Gemeente"
