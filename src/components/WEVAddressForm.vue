@@ -83,7 +83,14 @@
         v-if="form.vlaamse_stad_ID"
         :selectedAdres="form.adresID"
         @select-adres="(id: string) => $emit('selectAddress', id)"
-        :adressen="adressenStore.adressen.filter((adres: Adres) => `${adres.straatnaam.toLowerCase()} ${adres.nummer}`.includes(`${form.straatnaam.toLowerCase()} ${form.nummer}`))"
+        :adressen="
+          adressenStore.adressen.filter(
+            (adres: Adres) =>
+              `${adres.straatnaam.toLowerCase()} ${adres.nummer}`.includes(`${form.straatnaam.toLowerCase()}`) &&
+              `${adres.straatnaam.toLowerCase()} ${adres.nummer}`.includes(`${form.nummer}`) &&
+              adres.vlaamse_stad_ID === form.vlaamse_stad_ID
+          )
+        "
       />
     </div>
   </section>
