@@ -1,15 +1,15 @@
-import type { KeuringData } from '@/types'
+import type { Keuring } from '@/types'
 import { defineStore } from 'pinia'
 import { ref, type Ref } from 'vue'
 
 export const useKeuringenStore = defineStore('keuringen', () => {
-  const keuringen: Ref<KeuringData[]> = ref([])
+  const keuringen: Ref<Keuring[]> = ref([])
 
-  const addKeuring = (keuring: KeuringData) => {
+  const addKeuring = (keuring: Keuring) => {
     keuringen.value.push(keuring)
   }
 
-  const editKeuring = (index: string, keuring: KeuringData) => {
+  const editKeuring = (index: string, keuring: Keuring) => {
     removeKeuring(index)
     addKeuring(keuring)
   }

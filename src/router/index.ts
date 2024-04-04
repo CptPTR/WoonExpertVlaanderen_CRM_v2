@@ -42,40 +42,31 @@ const getKeuringData = async () => {
   const { data } = await supabase
     .from('keuringen')
     .select(
-      '*, created_by: gebruikers(*, organisatie: organisaties(*)), klant: klanten(*), adres: adressen(*, vlaamse_stad: vlaamse_steden(*)), facturatie: facturaties(*, vlaamse_stad: vlaamse_steden(*))'
-    )
+      // '*, created_by: gebruikers(*, organisatie: organisaties(*)), klant: klanten(*), adres: adressen(*, vlaamse_stad: vlaamse_steden(*)), facturatie: facturaties(*, vlaamse_stad: vlaamse_steden(*))'
+      "*, created_by: gebruikers(*, organisatie: organisaties(*))"
+      )
 
   if (data) {
     data.map(async (keuring) => {
       keuringenStore.addKeuring({
         id: keuring.id,
-        klant: {
-          id: keuring.klant.id,
-          voornaam: keuring.klant.voornaam,
-          achternaam: keuring.klant.achternaam,
-          emailadres: keuring.klant.emailadres,
-          telefoonnummer: keuring.klant.telefoonnummer
-        },
-        adres: {
-          id: keuring.adres.id,
-          straatnaam: keuring.adres.straatnaam,
-          nummer: keuring.adres.nummer,
-          vlaamse_stad_ID: keuring.adres.vlaamse_stad_ID
-        },
+        klantID: keuring.klant_ID,
+        adresID: keuring.adres_ID,
         // facturatie: keuring.facturatie_ID,
-        facturatie: keuring.facturatie
-          ? {
-              id: keuring.facturatie.id,
-              voornaam: keuring.facturatie.voornaam,
-              achternaam: keuring.facturatie.achternaam,
-              emailadres: keuring.facturatie.emailadres,
-              telefoonnummer: keuring.facturatie.telefoonnummer,
-              straatnaam: keuring.facturatie.straatnaam,
-              nummer: keuring.facturatie.nummer,
-              vlaamse_stad_ID: keuring.facturatie.vlaamse_stad_ID,
-              organisatie: keuring.facturatie.organisatieID
-            }
-          : null,
+        // facturatie: keuring.facturatie
+        //   ? {
+        //       id: keuring.facturatie.id,
+        //       voornaam: keuring.facturatie.voornaam,
+        //       achternaam: keuring.facturatie.achternaam,
+        //       emailadres: keuring.facturatie.emailadres,
+        //       telefoonnummer: keuring.facturatie.telefoonnummer,
+        //       straatnaam: keuring.facturatie.straatnaam,
+        //       nummer: keuring.facturatie.nummer,
+        //       vlaamse_stad_ID: keuring.facturatie.vlaamse_stad_ID,
+        //       organisatie: keuring.facturatie.organisatieID
+        //     }
+        //   : null,
+        facturatieID: keuring.facturatie_ID,
         status: keuring.status,
         type: keuring.type,
         toegang_eenheid: keuring.toegang_eenheid,
@@ -83,7 +74,9 @@ const getKeuringData = async () => {
         datum_plaatsbezoek: keuring.datum_plaatsbezoek ? new Date(keuring.datum_plaatsbezoek) : null,
         created_by: keuring.created_by,
         opmerking: keuring.opmerking,
-        facturatie_bestemming: keuring.facturatie_bestemming
+        facturatie_bestemming: keuring.facturatie_bestemming, 
+        event_ID: keuring.event_ID, 
+        asbest_event_ID: keuring.asbest_event_ID
       })
     })
   }

@@ -34,9 +34,9 @@ export type VlaamseStad = {
 
 export type Keuring = {
   id?: string
-  adresID?: string
-  klantID?: string
-  facturatieID?: string | null
+  adresID: string
+  klantID: string
+  facturatieID: string | null
   facturatie_bestemming?: FacturatieBestemming
   status: Status
   toegang_eenheid: ToegangEenheid
@@ -50,12 +50,6 @@ export type Keuring = {
   opmerking: string,
   event_ID: string | null,
   asbest_event_ID: string | null
-}
-
-export type KeuringData = Keuring & {
-  adres: Adres
-  klant: Klant
-  facturatie: Facturatie | null
 }
 
 export type Gebruiker = {

@@ -20,7 +20,7 @@
   import { useKeuringenStore } from '@/stores/keuringenStore'
   import { useKlantenStore } from '@/stores/klantenStore'
   import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
-  import type { Adres, FormKeuring, Keuring } from '@/types'
+  import type { Adres, FormKeuring } from '@/types'
   import { Icon } from '@iconify/vue'
   import VueDatePicker from '@vuepic/vue-datepicker'
   import 'add-to-calendar-button'
@@ -286,19 +286,21 @@
 
       keuringenStore.addKeuring({
         id: uploadedKeuring.id,
-        klant: {
-          id: uploadedKeuring.klant.id,
-          voornaam: uploadedKeuring.klant.voornaam,
-          achternaam: uploadedKeuring.klant.achternaam,
-          emailadres: uploadedKeuring.klant.emailadres,
-          telefoonnummer: uploadedKeuring.klant.telefoonnummer
-        },
-        adres: {
-          id: uploadedKeuring.adres.id,
-          straatnaam: uploadedKeuring.adres.straatnaam,
-          nummer: uploadedKeuring.adres.nummer,
-          vlaamse_stad_ID: uploadedKeuring.adres.vlaamse_stad
-        },
+        // klant: {
+        //   id: uploadedKeuring.klant.id,
+        //   voornaam: uploadedKeuring.klant.voornaam,
+        //   achternaam: uploadedKeuring.klant.achternaam,
+        //   emailadres: uploadedKeuring.klant.emailadres,
+        //   telefoonnummer: uploadedKeuring.klant.telefoonnummer
+        // },
+        klantID: uploadedKeuring.klant_ID,
+        // adres: {
+        //   id: uploadedKeuring.adres.id,
+        //   straatnaam: uploadedKeuring.adres.straatnaam,
+        //   nummer: uploadedKeuring.adres.nummer,
+        //   vlaamse_stad_ID: uploadedKeuring.adres.vlaamse_stad
+        // },
+        adresID: uploadedKeuring.adres_ID,
         status: uploadedKeuring.status,
         type: uploadedKeuring.type,
         toegang_eenheid: uploadedKeuring.toegang_eenheid,
@@ -306,7 +308,7 @@
         datum_plaatsbezoek: new Date(uploadedKeuring.datum_plaatsbezoek),
         created_by: uploadedKeuring.created_by,
         opmerking: uploadedKeuring.opmerking,
-        facturatie: uploadedKeuring.facturatie,
+        facturatieID: uploadedKeuring.facturatie_ID,
         event_ID: uploadedKeuring.event_ID,
         asbest_event_ID: uploadedKeuring.asbest_event_ID
       })
@@ -350,13 +352,9 @@
 
         await axios.post('http://localhost:3000/events/epc', event).then((e) => (keuringForm.event_ID = e.data.id))
 
-        console.log(keuringForm.event_ID)
-
         if (keuring.type.includes(TypeKeuring.ASBEST)) {
           await axios.post('http://localhost:3000/events/asbest', event).then((e) => (keuringForm.asbest_event_ID = e.data.id))
         }
-
-        console.log(keuringForm.asbest_event_ID)
       }
     }
   }

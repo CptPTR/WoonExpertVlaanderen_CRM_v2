@@ -4,7 +4,7 @@
   import { Status } from '@/enums/modules/Status'
   import router from '@/router'
   import { useKeuringenStore } from '@/stores/keuringenStore'
-  import type { KeuringData } from '@/types'
+  import type { Keuring } from '@/types'
   import { Icon } from '@iconify/vue'
   import Image from 'primevue/image'
   import { computed, ref } from 'vue'
@@ -21,15 +21,15 @@
 
   const filterKeuringen = () => {
     return keuringenStore.keuringen.filter((keuring) => {
-      if (keuring.klant) {
-        return (
-          `${keuring.klant.voornaam} ${keuring.klant.achternaam}`.toLowerCase().includes(filterOp.value.toLowerCase()) || keuring.adres.straatnaam.toLowerCase().includes(filterOp.value.toLowerCase())
-        )
-      }
+      // if (keuring.klant) {
+      return `${keuring.klantID} ${keuring.klantID}`.toLowerCase().includes(filterOp.value.toLowerCase())
+      // ||
+      // keuring.adresID.toLowerCase().includes(filterOp.value.toLowerCase())
+      // }
     })
   }
 
-  const sortKeuringen = (keuringA: KeuringData, keuringB: KeuringData) => {
+  const sortKeuringen = (keuringA: Keuring, keuringB: Keuring) => {
     const statusOrder = {
       [Status.NIEUW]: 1,
       [Status.INGEPLAND]: 2,

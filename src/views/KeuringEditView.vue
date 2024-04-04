@@ -418,19 +418,8 @@
       toast.add({ severity: 'success', detail: `Keuring gewijzigd!`, group: 'br', life: 5000 })
       const k = {
         id: updatedKeuring.id,
-        klant: {
-          id: updatedKeuring.klant.id,
-          voornaam: updatedKeuring.klant.voornaam,
-          achternaam: updatedKeuring.klant.achternaam,
-          emailadres: updatedKeuring.klant.emailadres,
-          telefoonnummer: updatedKeuring.klant.telefoonnummer
-        },
-        adres: {
-          id: updatedKeuring.adres.id,
-          straatnaam: updatedKeuring.adres.straatnaam,
-          nummer: updatedKeuring.adres.nummer,
-          vlaamse_stad_ID: updatedKeuring.adres.vlaamse_stad_ID
-        },
+        klantID: updatedKeuring.klant_ID,
+        adresID: updatedKeuring.adres_ID,
         status: updatedKeuring.status,
         type: updatedKeuring.type,
         toegang_eenheid: updatedKeuring.toegang_eenheid,
@@ -438,7 +427,7 @@
         datum_plaatsbezoek: updatedKeuring.datum_plaatsbezoek ? new Date(updatedKeuring.datum_plaatsbezoek) : null,
         created_by: updatedKeuring.created_by,
         opmerking: updatedKeuring.opmerking,
-        facturatie: updatedKeuring.facturatie,
+        facturatieID: updatedKeuring.facturatie_ID,
         event_ID: updatedKeuring.event_ID,
         asbest_event_ID: updatedKeuring.asbest_event_ID
       }

@@ -1,8 +1,10 @@
 <script setup lang="ts">
   import { supabase } from '@/config/supabase'
+  import { useAdressenStore } from '@/stores/adressenStore'
   import { useKeuringenStore } from '@/stores/keuringenStore'
+  import { useKlantenStore } from '@/stores/klantenStore'
   import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
-  import type { KeuringData } from '@/types'
+  import type { Keuring } from '@/types'
   import { Icon } from '@iconify/vue'
   import { computed } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
@@ -10,7 +12,7 @@
   const emit = defineEmits(['cancel-delete-keuring'])
 
   const { keuring } = defineProps<{
-    keuring: KeuringData
+    keuring: Keuring
     isOpen: boolean
   }>()
 
@@ -18,16 +20,20 @@
   const route = useRoute()
   const keuringenStore = useKeuringenStore()
   const vlaamseStedenStore = useVlaamseStedenStore()
+  const adressenStore = useAdressenStore()
+  const klantenStore = useKlantenStore()
 
-  const vlaamseStad = computed(() => {
-    return vlaamseStedenStore.getStadById(keuring.adres.vlaamse_stad_ID)
+  // const vlaamseStad = computed(() => {
+  //   return vlaamseStedenStore.getStadById(keuring.adres.vlaamse_stad_ID)
+  // })
+
+  const kAddress = computed(() => {
+    // return `${keuring.adres.straatnaam} ${keuring.adres.nummer}, ${vlaamseStad.value.postcode} ${vlaamseStad.value.gemeente}`
+    return adressenStore.getAdres(keuring.adresID)
   })
 
-  const keuringAdres = computed(() => {
-    if (keuring && vlaamseStad.value) {
-      return `${keuring.adres.straatnaam} ${keuring.adres.nummer}, ${vlaamseStad.value.postcode} ${vlaamseStad.value.gemeente}`
-    }
-    return ''
+  const kClient = computed(() => {
+    return klantenStore.getKlant(keuring.klantID)
   })
 
   const formattedDateTime = computed(() => {
@@ -65,6 +71,7 @@
     <div v-if="isOpen" class="modal">
       <div class="content">
         <h2>Bent u zeker dat u deze keuring wilt verwijderen?</h2>
+        <p>{{ keuring }}</p>
         <ul v-if="keuring">
           <li>
             {{ keuring.type.toUpperCase() }}
@@ -72,26 +79,34 @@
           <li>
             {{ keuring.status }}
           </li>
-          <li v-if="keuring.datum_plaatsbezoek">- {{ formattedDateTime }}</li>
-          <li v-else>Datum plaatsbezoek (nog) niet ingepland</li>
-          <li>
-            {{ keuringAdres }}
+          <li v-if="keuring.datum_plaatsbezoek">
+            <Icon icon="mdi:clock" />
+            {{ formattedDateTime }}
+          </li>
+          <li v-else>
+            <Icon icon="mdi:clock" />
+            Datum plaatsbezoek (nog) niet ingepland
           </li>
           <li>
-            {{ keuring.klant.voornaam + ' ' + keuring.klant.achternaam }}
+            <Icon icon="mdi:home" />
+            {{ `${kAddress.straatnaam} ${kAddress.nummer}, ` }}
+          </li>
+          <li>
+            <Icon icon="mdi:account" />
+            {{ `${kClient.voornaam} ${kClient.achternaam}` }}
           </li>
           <li>
             <Icon icon="mdi:phone" />
-            {{ keuring.klant.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4') }}
+            {{ `${kClient.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')}` }}
           </li>
           <li>
             <Icon icon="mdi:email" />
-            {{ keuring.klant.emailadres }}
+            {{ `${kClient.emailadres}` }}
           </li>
         </ul>
         <div class="actions">
           <button class="cancel" title="Annuleer" @click="handleCancelClick">Annuleer</button>
-          <button class="delete" title="Verwijder keuring" @click="deleteKeuring(route.params.id as string)">Verwijder keuring</button>
+          <button class="delete" title="Verwijder keuring" @click="deleteKeuring(keuring.id ? keuring.id : (route.params.id as string))">Verwijder keuring</button>
         </div>
       </div>
     </div>

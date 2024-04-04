@@ -7,9 +7,11 @@
   import { useAdressenStore } from '@/stores/adressenStore'
   import { useCertificaatStore } from '@/stores/certificatenStore'
   import { useExtraDocumentStore } from '@/stores/extraDocumentenStore'
+  import { useFacturatiesStore } from '@/stores/facturatiesStore'
   import { useKeuringenStore } from '@/stores/keuringenStore'
+  import { useKlantenStore } from '@/stores/klantenStore'
   import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
-  import type { KeuringData } from '@/types'
+  import type { Keuring } from '@/types'
   import { formatFileSize } from '@/utils/formatting'
   import { Icon } from '@iconify/vue'
   import Badge from 'primevue/badge'
@@ -28,8 +30,10 @@
   const certificatenStore = useCertificaatStore()
   const adressenStore = useAdressenStore()
   const vlaamseStedenStore = useVlaamseStedenStore()
+  const klantenStore = useKlantenStore()
+  const facturatiesStore = useFacturatiesStore()
 
-  const keuring = ref<KeuringData>()
+  const keuring = ref<Keuring>()
   const isDeleteConfirmationOpen = ref<boolean>(false)
 
   const editKeuring = (id: string) => {
@@ -131,23 +135,39 @@
     return ''
   })
 
-  const adres = computed(() => {
-    if (keuring.value && keuring.value.adres) {
-      return adressenStore.getAdres(keuring.value.adres.id)
+  const kClient = computed(() => {
+    if (keuring.value) {
+      return klantenStore.getKlant(keuring.value.klantID ?? '')
     }
-    return ''
+    return null
+  })
+
+  const kAddress = computed(() => {
+    if (keuring.value) {
+      return adressenStore.getAdres(keuring.value.adresID)
+    }
+
+    return null
+  })
+
+  const kFacturatie = computed(() => {
+    if (keuring.value && keuring.value.facturatieID) {
+      return facturatiesStore.getFacturatie(keuring.value.facturatieID)
+    }
+
+    return null
   })
 
   const vlaamseStad = computed(() => {
-    if (keuring.value && keuring.value.adres) {
-      return vlaamseStedenStore.getStadById(keuring.value.adres.vlaamse_stad_ID)
+    if (kAddress.value) {
+      return vlaamseStedenStore.getStadById(kAddress.value.vlaamse_stad_ID)
     }
-    return ''
+    return null
   })
 
   const facVlaamseStad = computed(() => {
-    if (keuring.value && keuring.value.facturatie) {
-      return vlaamseStedenStore.getStadById(keuring.value.facturatie.vlaamse_stad_ID)
+    if (kFacturatie.value) {
+      return vlaamseStedenStore.getStadById(kFacturatie.value.vlaamse_stad_ID)
     }
     return ''
   })
@@ -159,8 +179,8 @@
       await getCertificatenData(keuring.value.id)
     }
 
-    if (keuring.value && keuring.value.adres.id) {
-      await getExtraDocumentenData(keuring.value.adres.id)
+    if (kAddress.value && kAddress.value.id) {
+      await getExtraDocumentenData(kAddress.value.id)
     }
   })
 </script>
@@ -169,8 +189,8 @@
   <div class="container keuring" v-if="keuring">
     <div class="title">
       <WEVBackButton @click="handleClickGoBackButton" />
-      <h1 v-if="adres && vlaamseStad">
-        {{ `${keuring.type ?? ''} Keuring - ${adres.straatnaam} ${adres.nummer}, ${vlaamseStad.postcode} ${vlaamseStad.gemeente}` }}
+      <h1 v-if="kAddress && vlaamseStad">
+        {{ `${keuring.type ?? ''} Keuring - ${kAddress.straatnaam} ${kAddress.nummer}, ${vlaamseStad.postcode} ${vlaamseStad.gemeente}` }}
       </h1>
       <h1 v-else>loading keuring...</h1>
     </div>
@@ -201,20 +221,20 @@
       </div>
     </div>
     <div class="content">
-      <div class="klant-fac">
+      <div class="klant-fac" v-if="kClient && kAddress">
         <div class="klant">
           <h2>Klant</h2>
           <span>
             <Icon icon="mdi:account" width="20" />
-            {{ `${keuring.klant.voornaam} ${keuring.klant.achternaam}` }}
+            {{ `${kClient.voornaam} ${kClient.achternaam}` }}
           </span>
           <span>
             <Icon icon="mdi:at" width="20" />
-            {{ keuring.klant.emailadres }}
+            {{ kClient.emailadres }}
           </span>
           <span>
             <Icon icon="mdi:phone" width="20" />
-            {{ keuring.klant.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4') }}
+            {{ kClient.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4') }}
           </span>
         </div>
         <div class="fac" v-if="keuring.facturatie_bestemming === FacturatieBestemming.IMMO">
@@ -224,23 +244,23 @@
             IMMO
           </span>
         </div>
-        <div class="fac" v-if="keuring.facturatie && facVlaamseStad && vlaamseStad">
+        <div class="fac" v-if="kFacturatie && facVlaamseStad && vlaamseStad">
           <h2>Facturatie</h2>
-          <span v-if="!`${keuring.facturatie.voornaam} ${keuring.facturatie.voornaam}`.includes(`${keuring.klant.voornaam} ${keuring.klant.achternaam}`)">
+          <span v-if="!`${kFacturatie.voornaam} ${kFacturatie.voornaam}`.includes(`${kClient.voornaam} ${kClient.achternaam}`)">
             <Icon icon="mdi:account" width="20" />
-            {{ `${keuring.facturatie.voornaam} ${keuring.facturatie.achternaam}` }}
+            {{ `${kFacturatie.voornaam} ${kFacturatie.achternaam}` }}
           </span>
-          <span v-if="!keuring.facturatie.emailadres.includes(keuring.klant.emailadres)">
+          <span v-if="!kFacturatie.emailadres.includes(kClient.emailadres)">
             <Icon icon="mdi:at" width="20" />
-            {{ keuring.facturatie.emailadres }}
+            {{ kFacturatie.emailadres }}
           </span>
-          <span v-if="!keuring.facturatie.telefoonnummer.includes(keuring.klant.telefoonnummer)">
+          <span v-if="!kFacturatie.telefoonnummer.includes(kClient.telefoonnummer)">
             <Icon icon="mdi:phone" width="20" />
-            {{ keuring.facturatie.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4') }}
+            {{ kFacturatie.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4') }}
           </span>
-          <span v-if="!`${keuring.facturatie.straatnaam} ${keuring.facturatie.nummer}`.includes(`${keuring.adres.straatnaam} ${keuring.adres.nummer}`)">
+          <span v-if="!`${kFacturatie.straatnaam} ${kFacturatie.nummer}`.includes(`${kAddress.straatnaam} ${kAddress.nummer}`)">
             <Icon icon="mdi:home" width="20" />
-            {{ `${keuring.facturatie.straatnaam} ${keuring.facturatie.nummer}` }}
+            {{ `${kFacturatie.straatnaam} ${kFacturatie.nummer}` }}
           </span>
           <span v-if="!`${facVlaamseStad.postcode} ${facVlaamseStad.gemeente}`.includes(`${vlaamseStad.postcode} ${vlaamseStad.gemeente}`)">
             <Icon icon="mdi:city" width="20" />

@@ -1,21 +1,25 @@
 <script setup lang="ts">
   import { Status } from '@/enums/modules/Status'
+  import { useAdressenStore } from '@/stores/adressenStore'
+  import { useKlantenStore } from '@/stores/klantenStore'
   import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
   import { getStatusColor } from '@/utils/colors'
   import { formatDate } from '@/utils/formatting'
   import { Icon } from '@iconify/vue'
   import { vOnClickOutside } from '@vueuse/components'
   import { computed, ref } from 'vue'
-  import type { KeuringData } from '../types'
+  import type { Keuring } from '../types'
   import WEVDeleteKeuring from './modals/WEVDeleteKeuring.vue'
 
   const emit = defineEmits(['view-keuring', 'edit-keuring', 'delete-keuring'])
 
   const { keuring } = defineProps<{
-    keuring: KeuringData
+    keuring: Keuring
   }>()
 
   const vlaamseStedenStore = useVlaamseStedenStore()
+  const klantenStore = useKlantenStore()
+  const adressenStore = useAdressenStore()
 
   const isDeleteConfirmationOpen = ref(false)
   const isActionsMenuOpen = ref<boolean>(false)
@@ -61,7 +65,15 @@
   })
 
   const vlaamseStad = computed(() => {
-    return vlaamseStedenStore.getStadById(keuring.adres.vlaamse_stad_ID)
+    return vlaamseStedenStore.getStadById(kAddress.value.vlaamse_stad_ID)
+  })
+
+  const kClient = computed(() => {
+    return klantenStore.getKlant(keuring.klantID ?? '')
+  })
+
+  const kAddress = computed(() => {
+    return adressenStore.getAdres(keuring.adresID ?? '')
   })
 </script>
 
@@ -75,18 +87,19 @@
   <td v-if="keuring.type">
     {{ keuring.type.toUpperCase() }}
   </td>
-  <td class="klant" v-if="keuring.klant">
+  <td class="klant" v-if="keuring.klantID">
     <span class="naam">
-      {{ keuring.klant.voornaam + ' ' + keuring.klant.achternaam }}
+      {{ kClient.voornaam + ' ' + kClient.achternaam }}
     </span>
     <br />
     <span class="emailadres">
-      {{ keuring.klant.emailadres }}
+      {{ kClient.emailadres }}
     </span>
   </td>
-  <td class="adres" v-if="keuring.adres">
+  <td class="adres" v-if="keuring.adresID">
     <span class="straatnaam-nummer">
-      {{ keuring.adres.straatnaam + ' ' + keuring.adres.nummer }}
+      <!-- {{ keuring.adresID + ' ' + keuring.adresID }} -->
+      {{ kAddress.straatnaam + ' ' + kAddress.nummer }}
     </span>
     <br />
     <span class="gemeente" v-if="vlaamseStad">
