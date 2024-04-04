@@ -71,7 +71,6 @@
     <div v-if="isOpen" class="modal">
       <div class="content">
         <h2>Bent u zeker dat u deze keuring wilt verwijderen?</h2>
-        <p>{{ keuring }}</p>
         <ul v-if="keuring">
           <li>
             {{ keuring.type.toUpperCase() }}
