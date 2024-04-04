@@ -61,12 +61,6 @@
     adresID: '',
     straatnaam: '',
     nummer: '',
-    // vlaamse_stad: {
-    //   gemeente: '',
-    //   stad: '',
-    //   provincie: '',
-    //   postcode: ''
-    // },
     vlaamse_stad_ID: '',
 
     facturatieID: '',
@@ -106,7 +100,9 @@
         provincie: '',
         postcode: ''
       }
-    }
+    },
+    event_ID: null,
+    asbest_event_ID: null
   })
 
   const certificatesFormVisible = ref<boolean>(false)
@@ -442,7 +438,9 @@
         datum_plaatsbezoek: updatedKeuring.datum_plaatsbezoek ? new Date(updatedKeuring.datum_plaatsbezoek) : null,
         created_by: updatedKeuring.created_by,
         opmerking: updatedKeuring.opmerking,
-        facturatie: updatedKeuring.facturatie
+        facturatie: updatedKeuring.facturatie,
+        event_ID: updatedKeuring.event_ID,
+        asbest_event_ID: updatedKeuring.asbest_event_ID
       }
       keuringenStore.editKeuring(route.params.id as string, k)
 

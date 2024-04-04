@@ -21,7 +21,6 @@ export type Adres = {
   id: string
   straatnaam: string
   nummer: string
-  //vlaamse_stad: VlaamseStad
   vlaamse_stad_ID: string
 }
 
@@ -48,7 +47,9 @@ export type Keuring = {
   certificaten_epc?: Certificaat[]
   certificaten_asbest?: Certificaat[]
   extra_documenten?: ExtraDocument[]
-  opmerking: string
+  opmerking: string,
+  event_ID: string | null,
+  asbest_event_ID: string | null
 }
 
 export type KeuringData = Keuring & {
@@ -82,7 +83,6 @@ export type Facturatie = {
   telefoonnummer: string
   straatnaam: string
   nummer: string
-  // vlaamse_stad: VlaamseStad | string
   vlaamse_stad_ID: string
   organisatie?: string | null
 }
@@ -117,7 +117,6 @@ export type FormKeuring = {
 
   straatnaam: string
   nummer: string
-  // vlaamse_stad: VlaamseStad
   vlaamse_stad_ID: string
 
   status: Status
@@ -129,5 +128,6 @@ export type FormKeuring = {
   asbest_certificaten: Certificaat[]
   extra_documenten: ExtraDocument[]
   created_by: Gebruiker
-  // facturatie: Facturatie
+  event_ID: string | null
+  asbest_event_ID: string | null
 }

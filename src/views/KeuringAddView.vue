@@ -58,12 +58,6 @@
 
     straatnaam: '',
     nummer: '',
-    // vlaamse_stad: {
-    //   gemeente: '',
-    //   stad: '',
-    //   provincie: '',
-    //   postcode: ''
-    // },
     vlaamse_stad_ID: '',
 
     status: Status.NIEUW,
@@ -85,7 +79,9 @@
         naam: authStore.currentlyLoggedIn?.organisatie.naam as string
       },
       avatar: authStore.currentlyLoggedIn?.avatar as string
-    }
+    },
+    event_ID: null,
+    asbest_event_ID: null
   })
 
   const certificatesFormVisible = ref<boolean>(false)
@@ -125,30 +121,6 @@
 
   const asbest_certificaten = computed(() => {
     return certificatenStore.certificaten.filter((cert) => cert.type.includes(TypeKeuring.ASBEST))
-  })
-
-  // const keuringPlaatsbezoekStartTime = computed(() => {
-  //   if (keuringForm.datum_plaatsbezoek) {
-  //     const hours = keuringForm.datum_plaatsbezoek.getHours()
-  //     const minutes = keuringForm.datum_plaatsbezoek.getMinutes()
-
-  //     // Add leading zero if needed
-  //     const formattedHours: string = (hours < 10 ? '0' : '') + hours
-  //     const formattedMinutes: string = (minutes < 10 ? '0' : '') + minutes
-
-  //     return formattedHours + ':' + formattedMinutes
-  //   }
-  //   return ''
-  // })
-
-  const keuringPlaatsbezoekEndTime = computed(() => {
-    if (keuringForm.datum_plaatsbezoek) {
-      const endTime = keuringForm.datum_plaatsbezoek
-      endTime.setMinutes(keuringForm.datum_plaatsbezoek.getMinutes() + 45)
-
-      return endTime
-    }
-    return ''
   })
 
   const uploadExtraDocumenten = async (event: Event) => {
@@ -243,21 +215,28 @@
     }
   }
 
-  const uploadKeuring = async (keuring: Keuring) => {
+  const uploadKeuring = async () => {
     const { data: uploadedKeuring } = await supabase
       .from('keuringen')
       .insert([
         {
-          created_by: keuring.created_by.id,
-          adres_ID: keuring.adresID,
-          klant_ID: keuring.klantID,
-          facturatie_ID: keuring.facturatieID,
-          facturatie_bestemming: keuring.facturatie_bestemming,
-          status: keuring.status,
-          type: keuring.type,
-          opmerking: keuring.opmerking,
-          toegang_eenheid: keuring.toegang_eenheid,
-          datum_plaatsbezoek: keuring.datum_plaatsbezoek
+          created_by: keuringForm.created_by.id,
+          adres_ID: keuringForm.adresID,
+          klant_ID: keuringForm.klantID,
+          facturatie_ID: keuringForm.facturatieID,
+          facturatie_bestemming: keuringForm.facturatie_bestemming,
+          status: keuringForm.status,
+          type:
+            keuringForm.type.includes(TypeKeuring.EPC) && keuringForm.type.includes(TypeKeuring.ASBEST)
+              ? TypeKeuring.EPC_ASBEST
+              : keuringForm.type.includes(TypeKeuring.EPC)
+                ? TypeKeuring.EPC
+                : TypeKeuring.ASBEST,
+          opmerking: keuringForm.opmerking,
+          toegang_eenheid: keuringForm.toegang_eenheid,
+          datum_plaatsbezoek: keuringForm.datum_plaatsbezoek,
+          event_ID: keuringForm.event_ID,
+          asbest_event_ID: keuringForm.asbest_event_ID
         }
       ])
       .select('*, created_by: gebruikers(*, organisatie: organisaties(*)), klant: klanten(*), adres: adressen(*, vlaamse_stad: vlaamse_steden(*)), facturatie: facturaties(*)')
@@ -294,7 +273,7 @@
         naam: extraDoc.naam,
         size: extraDoc.size,
         type: extraDoc.type,
-        adres_ID: keuring.adresID
+        adres_ID: keuringForm.adresID
       }))
     )
 
@@ -327,7 +306,9 @@
         datum_plaatsbezoek: new Date(uploadedKeuring.datum_plaatsbezoek),
         created_by: uploadedKeuring.created_by,
         opmerking: uploadedKeuring.opmerking,
-        facturatie: uploadedKeuring.facturatie
+        facturatie: uploadedKeuring.facturatie,
+        event_ID: uploadedKeuring.event_ID,
+        asbest_event_ID: uploadedKeuring.asbest_event_ID
       })
 
       certificatenStore.empty()
@@ -345,7 +326,7 @@
     keuringForm.status = Status.NIEUW
   }
 
-  const addEventToCalendar = (keuring: Keuring) => {
+  const addEventToCalendar = async (keuring: FormKeuring) => {
     if (keuringClient.value) {
       if (keuring.datum_plaatsbezoek && keuringAddress.value && vlaamseStad.value) {
         const endTime = new Date(keuring.datum_plaatsbezoek)
@@ -367,47 +348,29 @@
           }
         }
 
-        axios.post('http://localhost:3000/events/epc', event)
+        await axios.post('http://localhost:3000/events/epc', event).then((e) => (keuringForm.event_ID = e.data.id))
+
+        console.log(keuringForm.event_ID)
 
         if (keuring.type.includes(TypeKeuring.ASBEST)) {
-          axios.post('http://localhost:3000/events/asbest', event)
+          await axios.post('http://localhost:3000/events/asbest', event).then((e) => (keuringForm.asbest_event_ID = e.data.id))
         }
+
+        console.log(keuringForm.asbest_event_ID)
       }
     }
   }
 
-  const submitForm = (event: Event) => {
+  const submitForm = async (event: Event) => {
     event.preventDefault()
 
     if (keuringForm.type.length === 0 || !keuringForm.adresID || !keuringForm.klantID) return
 
-    const keuring: Keuring = {
-      klantID: keuringForm.klantID,
-      adresID: keuringForm.adresID,
-      facturatieID: keuringForm.facturatieID,
-      facturatie_bestemming: keuringForm.facturatie_bestemming,
-      status: keuringForm.status,
-      toegang_eenheid: keuringForm.toegang_eenheid,
-      datum_toewijzing: new Date(Date.now()),
-      datum_plaatsbezoek: keuringForm.datum_plaatsbezoek,
-      opmerking: keuringForm.opmerking,
-      certificaten_epc: keuringForm.epc_certificaten,
-      certificaten_asbest: keuringForm.asbest_certificaten,
-      extra_documenten: keuringForm.extra_documenten,
-      type:
-        keuringForm.type.includes(TypeKeuring.EPC) && keuringForm.type.includes(TypeKeuring.ASBEST)
-          ? TypeKeuring.EPC_ASBEST
-          : keuringForm.type.includes(TypeKeuring.EPC)
-            ? TypeKeuring.EPC
-            : TypeKeuring.ASBEST,
-      created_by: keuringForm.created_by
+    if (datum_plaatsbezoek_edited.value) {
+      await addEventToCalendar(keuringForm)
     }
 
-    console.log('upload keuring: ', keuring)
-    if (datum_plaatsbezoek_edited.value) {
-      addEventToCalendar(keuring)
-    }
-    uploadKeuring(keuring)
+    uploadKeuring()
   }
 
   const handleChangeFacturatieBestemming = (event: any) => {
@@ -580,27 +543,6 @@
             cancel-text="Sluiten"
             select-text="Selecteer"
           />
-          <!--
-            <add-to-calendar-button
-            v-if="keuringForm.datum_plaatsbezoek"
-            size="1"
-            label="Toevoegen aan agenda"
-            :name="kAdres"
-            :location="kAdres"
-            :description="`${keuringForm.type.join(' + ')} keuring\n${keuringClient.voornaam} ${keuringClient.achternaam}\n${keuringClient.emailadres}\n${keuringClient.telefoonnummer.replace(
-              /(\d{4})(\d{2})(\d{2})(\d{2})/,
-              '$1 $2 $3 $4'
-            )}`"
-            options="Google"
-            buttonsList
-            buttonStyle="round"
-            startDate="2024-03-10"
-            :startTime="keuringPlaatsbezoekStartTime"
-            :endTime="keuringPlaatsbezoekEndTime"
-            timeZone="Europe/Brussels"
-            language="nl"
-          ></add-to-calendar-button>
-          -->
         </div>
         <div class="uploader-wrapper">
           <Button :disabled="!keuringForm.adresID || !keuringForm.klantID" raised severity="warning" @click="handleCertificaatUploadClick">
