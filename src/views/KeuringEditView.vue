@@ -26,6 +26,9 @@
   import { gsap } from 'gsap'
   import Button from 'primevue/button'
   import Checkbox from 'primevue/checkbox'
+  import IconField from 'primevue/iconfield'
+  import InputIcon from 'primevue/inputicon'
+  import InputText from 'primevue/inputtext'
   import RadioButton from 'primevue/radiobutton'
   import Textarea from 'primevue/textarea'
   import { useToast } from 'primevue/usetoast'
@@ -45,6 +48,7 @@
   const toast = useToast()
 
   const loadingKeuring = ref<boolean>(true)
+  const editClientEmailPhoneNumber = ref<boolean>(false)
   const keuringForm: FormKeuring = reactive({
     type: [],
 
@@ -479,12 +483,12 @@
 
   const handleCloseClientClick = () => {
     keuringForm.klantID = ''
-    keuringForm.facturatieID = ''
+    keuringForm.facturatieID = null
     keuringForm.facturatie_bestemming = FacturatieBestemming.HETZELFDE
   }
 
   const handleCloseFacturatieClick = () => {
-    keuringForm.facturatieID = ''
+    keuringForm.facturatieID = null
     keuringForm.facturatie_bestemming = FacturatieBestemming.HETZELFDE
   }
 
@@ -496,6 +500,24 @@
   const handleExtraDocumentenClick = () => {
     extraDocsFormVisible.value = !extraDocsFormVisible.value
     certificatesFormVisible.value = false
+  }
+
+  const handleConfirmEdit = async () => {
+    if (keuringClient.value && keuringClient.value.id) {
+      const { error } = await supabase
+        .from('klanten')
+        .update({
+          emailadres: keuringClient.value.emailadres,
+          telefoonnummer: keuringClient.value.telefoonnummer
+        })
+        .eq('id', keuringClient.value.id)
+
+      if (error) {
+        console.error('Error updating klant: ', error)
+        return
+      }
+      editClientEmailPhoneNumber.value = false
+    }
   }
 </script>
 
@@ -532,8 +554,10 @@
             <div class="adres">
               {{ `${keuringAddress.straatnaam} ${keuringAddress.nummer}, ${vlaamseStad.postcode} ${vlaamseStad.gemeente}` }}
             </div>
-            <div @click="keuringForm.adresID = ''">
-              <Icon icon="mdi:close" width="20" />
+            <div class="edit-close">
+              <div @click="keuringForm.adresID = ''">
+                <Icon icon="mdi:close" width="20" />
+              </div>
             </div>
           </div>
         </div>
@@ -548,15 +572,35 @@
               <div class="name">
                 {{ `${keuringClient.voornaam} ${keuringClient.achternaam}` }}
               </div>
-              <div class="email-tel">
-                @{{
-                  `${keuringClient.emailadres} -
-                ${keuringClient.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')}`
-                }}
+              <div class="email-tel" v-if="editClientEmailPhoneNumber">
+                <IconField iconPosition="left">
+                  <InputIcon class="pi pi-envelope"></InputIcon>
+                  <InputText type="text" v-model="keuringClient.emailadres" />
+                </IconField>
+                <IconField iconPosition="left">
+                  <InputIcon class="pi pi-phone"></InputIcon>
+                  <InputText type="text" v-model="keuringClient.telefoonnummer" />
+                </IconField>
+              </div>
+              <div class="email-tel" v-else>
+                <span>
+                  {{ keuringClient.emailadres }}
+                </span>
+                <span>
+                  {{ keuringClient.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4') }}
+                </span>
               </div>
             </div>
-            <div @click="handleCloseClientClick">
-              <Icon icon="mdi:close" width="20" />
+            <div class="edit-close">
+              <div @click="handleConfirmEdit" v-if="editClientEmailPhoneNumber">
+                <Icon icon="mdi:check" width="20" />
+              </div>
+              <div @click="editClientEmailPhoneNumber = true" v-else>
+                <Icon icon="mdi:pencil" width="20" />
+              </div>
+              <div @click="handleCloseClientClick">
+                <Icon icon="mdi:close" width="20" />
+              </div>
             </div>
           </div>
         </div>
@@ -672,7 +716,7 @@
       <div class="actions">
         <ul>
           <li title="Keuring uploaden">
-            <button type="submit" style="background-color: seagreen">
+            <button :disabled="editClientEmailPhoneNumber" type="submit" style="background-color: seagreen">
               <Icon icon="mdi:send" width="22" color="white" />
             </button>
           </li>
@@ -810,7 +854,25 @@
       }
 
       .email-tel {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        justify-content: flex-start;
         padding-top: 0.25rem;
+        color: #4b5563;
+
+        > span {
+          height: 24px;
+          padding-block: 0.5rem;
+          padding-inline: 25px;
+          border: 1px solid transparent;
+        }
+
+        input {
+          padding-block: 0.5rem;
+          font-size: 1rem;
+          font-family: 'Rubik', sans-serif;
+        }
       }
 
       .type {
@@ -952,9 +1014,28 @@
         justify-content: space-between;
         align-items: center;
 
-        div {
+        > div {
           display: flex;
           flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .edit-close {
+          display: flex;
+          flex-direction: row;
+          gap: 1rem;
+
+          div {
+            display: flex;
+            border-radius: 50%;
+            padding: 0.5rem;
+            cursor: pointer;
+
+            &:hover {
+              background-color: seagreen;
+              color: #fff;
+            }
+          }
         }
       }
     }
