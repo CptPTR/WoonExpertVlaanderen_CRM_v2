@@ -1,6 +1,7 @@
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
+import EnvironmentPlugin from "vite-plugin-environment"
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,7 +12,8 @@ export default defineConfig({
           isCustomElement: (tag) => tag.includes('-')
         }
       }
-    })
+    }),
+    EnvironmentPlugin(['APP_SUPABASE_URL', 'APP_ANON_KEY', 'GOOGLE_CLIENT_SECRET'])
   ],
   resolve: {
     alias: {
