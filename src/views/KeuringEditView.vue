@@ -23,6 +23,7 @@
   import type { Certificaat, FormKeuring } from '@/types'
   import { Icon } from '@iconify/vue'
   import 'add-to-calendar-button'
+  import axios from 'axios'
   import { gsap } from 'gsap'
   import Button from 'primevue/button'
   import Checkbox from 'primevue/checkbox'
@@ -49,6 +50,7 @@
 
   const loadingKeuring = ref<boolean>(true)
   const editClientEmailPhoneNumber = ref<boolean>(false)
+  const datum_plaatsbezoek_edited = ref<boolean>(false)
   const keuringForm: FormKeuring = reactive({
     type: [],
 
@@ -123,6 +125,8 @@
         keuringForm.opmerking = data.opmerking
         keuringForm.datum_plaatsbezoek = data.datum_plaatsbezoek
         keuringForm.status = data.status
+        keuringForm.event_ID = data.event_ID
+        keuringForm.asbest_event_ID = data.asbest_event_ID
       }
 
       const { data: certificatenData } = await supabase.from('certificaten').select('*').eq('keuringID', route.params.id)
@@ -197,38 +201,8 @@
     return ''
   })
 
-  const keuringPlaatsbezoekStartTime = computed(() => {
-    if (keuringForm.datum_plaatsbezoek) {
-      const hours = new Date(String(keuringForm.datum_plaatsbezoek)).getHours()
-      const minutes = new Date(String(keuringForm.datum_plaatsbezoek)).getMinutes()
-
-      // Add leading zero if needed
-      const formattedHours: string = (hours < 10 ? '0' : '') + hours
-      const formattedMinutes: string = (minutes < 10 ? '0' : '') + minutes
-
-      return formattedHours + ':' + formattedMinutes
-    }
-    return ''
-  })
-
-  const keuringPlaatsbezoekEndTime = computed(() => {
-    if (keuringForm.datum_plaatsbezoek) {
-      const endTime = new Date(keuringForm.datum_plaatsbezoek)
-      endTime.setMinutes(new Date(keuringForm.datum_plaatsbezoek).getMinutes() + 45)
-
-      const hours = endTime.getHours()
-      const minutes = endTime.getMinutes()
-
-      // Add leading zero if needed
-      const formattedHours: string = (hours < 10 ? '0' : '') + hours
-      const formattedMinutes: string = (minutes < 10 ? '0' : '') + minutes
-
-      return formattedHours + ':' + formattedMinutes
-    }
-    return ''
-  })
-
   const handleDate = () => {
+    datum_plaatsbezoek_edited.value = true
     keuringForm.status = Status.INGEPLAND
   }
 
@@ -385,8 +359,58 @@
     }
   }
 
-  const submitForm = (event: Event) => {
+  const editEPCEventToDate = async (id: string, newPbDate: Date) => {
+    const endTime = new Date(newPbDate)
+    endTime.setMinutes(newPbDate.getMinutes() + 45)
+
+    await axios.put(
+      `http://localhost:3000/events/epc/${id}`,
+      {
+        start: {
+          dateTime: newPbDate,
+          timeZone: 'Europe/Brussels'
+        },
+        end: {
+          dateTime: endTime,
+          timeZone: 'Europe/Brussels'
+        }
+      },
+      { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } }
+    )
+  }
+
+  const editAsbestEventToDate = async (id: string, newPbDate: Date) => {
+    const endTime = new Date(newPbDate)
+    endTime.setMinutes(newPbDate.getMinutes() + 45)
+
+    await axios.put(
+      `http://localhost:3000/events/asbest/${id}`,
+      {
+        start: {
+          dateTime: newPbDate,
+          timeZone: 'Europe/Brussels'
+        },
+        end: {
+          dateTime: endTime,
+          timeZone: 'Europe/Brussels'
+        }
+      },
+      { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } }
+    )
+  }
+
+  const submitForm = async (event: Event) => {
     event.preventDefault()
+
+    if (datum_plaatsbezoek_edited.value && keuringForm.datum_plaatsbezoek) {
+      if (keuringForm.event_ID) {
+        await editEPCEventToDate(keuringForm.event_ID, keuringForm.datum_plaatsbezoek)
+      }
+      if (keuringForm.asbest_event_ID) {
+        await editAsbestEventToDate(keuringForm.asbest_event_ID, keuringForm.datum_plaatsbezoek)
+      }
+    }
+
     updateKeuring()
   }
 
@@ -655,7 +679,8 @@
             cancel-text="Sluiten"
             select-text="Selecteer"
           />
-          <add-to-calendar-button
+          <!--
+            <add-to-calendar-button
             v-if="keuringForm.datum_plaatsbezoek"
             size="1"
             label="Toevoegen aan agenda"
@@ -674,6 +699,7 @@
             timeZone="Europe/Brussels"
             language="nl"
           ></add-to-calendar-button>
+          -->
         </div>
         <div class="uploader-wrapper">
           <Button :disabled="!keuringForm.adresID || !keuringForm.klantID" raised severity="warning" @click="handleCertificatenClick">
