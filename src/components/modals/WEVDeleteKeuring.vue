@@ -6,6 +6,7 @@
   import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
   import type { Keuring } from '@/types'
   import { Icon } from '@iconify/vue'
+  import axios from 'axios'
   import { computed } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
 
@@ -23,12 +24,11 @@
   const adressenStore = useAdressenStore()
   const klantenStore = useKlantenStore()
 
-  // const vlaamseStad = computed(() => {
-  //   return vlaamseStedenStore.getStadById(keuring.adres.vlaamse_stad_ID)
-  // })
+  const vlaamseStad = computed(() => {
+    return vlaamseStedenStore.getStadById(kAddress.value.vlaamse_stad_ID)
+  })
 
   const kAddress = computed(() => {
-    // return `${keuring.adres.straatnaam} ${keuring.adres.nummer}, ${vlaamseStad.value.postcode} ${vlaamseStad.value.gemeente}`
     return adressenStore.getAdres(keuring.adresID)
   })
 
@@ -57,9 +57,19 @@
   const deleteKeuring = async (id: string) => {
     const { error } = await supabase.from('keuringen').delete().eq('id', id)
 
+    const k = keuringenStore.getKeuring(id)
+
     if (error) {
       console.error(`Could not delete keuring with id ${id} from the database.`)
     } else {
+      if (k && k.event_ID) {
+        await axios.delete(`http://localhost:3000/events/epc/${k.event_ID}`, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
+      }
+
+      if (k && k.asbest_event_ID) {
+        await axios.delete(`http://localhost:3000/events/asbest/${k.asbest_event_ID}`, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
+      }
+
       keuringenStore.removeKeuring(id)
       router.replace({ path: '/keuringen' })
     }
@@ -88,7 +98,7 @@
           </li>
           <li>
             <Icon icon="mdi:home" />
-            {{ `${kAddress.straatnaam} ${kAddress.nummer}, ` }}
+            {{ `${kAddress.straatnaam} ${kAddress.nummer}, ${vlaamseStad.postcode} ${vlaamseStad.gemeente}` }}
           </li>
           <li>
             <Icon icon="mdi:account" />
