@@ -350,10 +350,12 @@
           }
         }
 
-        await axios.post('http://localhost:3000/events/epc', event).then((e) => (keuringForm.event_ID = e.data.id))
+        await axios.post('http://localhost:3000/events/epc', event, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } }).then((e) => (keuringForm.event_ID = e.data.id))
 
         if (keuring.type.includes(TypeKeuring.ASBEST)) {
-          await axios.post('http://localhost:3000/events/asbest', event).then((e) => (keuringForm.asbest_event_ID = e.data.id))
+          await axios
+            .post('http://localhost:3000/events/asbest', event, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
+            .then((e) => (keuringForm.asbest_event_ID = e.data.id))
         }
       }
     }
