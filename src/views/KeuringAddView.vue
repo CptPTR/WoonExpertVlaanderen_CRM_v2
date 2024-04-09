@@ -350,7 +350,9 @@
           }
         }
 
-        await axios.post('http://localhost:3000/events/epc', event, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } }).then((e) => (keuringForm.event_ID = e.data.id))
+        if (keuring.type.includes(TypeKeuring.EPC)) {
+          await axios.post('http://localhost:3000/events/epc', event, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } }).then((e) => (keuringForm.event_ID = e.data.id))
+        }
 
         if (keuring.type.includes(TypeKeuring.ASBEST)) {
           await axios
