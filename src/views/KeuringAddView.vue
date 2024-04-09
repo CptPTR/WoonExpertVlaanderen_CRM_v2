@@ -477,7 +477,7 @@
               <div class="name">
                 {{ `${keuringClient.voornaam} ${keuringClient.achternaam}` }}
               </div>
-              <div class="email-tel">@{{ `${keuringClient.emailadres} - ${keuringClient.telefoonnummer}` }}</div>
+              <div class="email-tel">@{{ `${keuringClient.emailadres} - ${keuringClient.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')}` }}</div>
             </div>
             <div @click="handleClientCloseClick">
               <Icon icon="mdi:close" width="20" />
@@ -516,7 +516,7 @@
                 {{ `${keuringFacturatie.voornaam} ${keuringFacturatie.achternaam}` }}
               </div>
               <div v-if="keuringFacturatie" class="fac_email-tel">
-                {{ `${keuringFacturatie.emailadres} - ${keuringFacturatie.telefoonnummer}` }}
+                {{ `${keuringFacturatie.emailadres} - ${keuringFacturatie.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')}` }}
               </div>
               <div v-if="keuringFacturatie" class="fac_adres">
                 {{ `${keuringFacturatie.straatnaam} ${keuringFacturatie.nummer}, ${vlaamseStedenStore.getStadById(keuringFacturatie.vlaamse_stad_ID)?.gemeente}` }}
