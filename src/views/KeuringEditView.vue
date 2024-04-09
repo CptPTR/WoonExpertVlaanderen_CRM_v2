@@ -379,6 +379,41 @@
     )
   }
 
+  const addEventToDate = async (keuring: FormKeuring) => {
+    if (keuringClient.value) {
+      if (keuring.datum_plaatsbezoek && keuringAddress.value && vlaamseStad.value) {
+        const endTime = new Date(keuring.datum_plaatsbezoek)
+        endTime.setMinutes(keuring.datum_plaatsbezoek.getMinutes() + 45)
+
+        const event = {
+          summary: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}, ${vlaamseStad.value.postcode} ${vlaamseStad.value.gemeente}`,
+          location: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}, ${vlaamseStad.value.postcode} ${vlaamseStad.value.gemeente}`,
+          description: `${keuringForm.type.join(' + ')} keuring\n${keuringClient.value.voornaam} ${keuringClient.value.achternaam}\n${keuringClient.value.emailadres}\n${String(
+            keuringClient.value.telefoonnummer
+          ).replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')}`,
+          start: {
+            dateTime: keuring.datum_plaatsbezoek,
+            timeZone: 'Europe/Brussels'
+          },
+          end: {
+            dateTime: endTime,
+            timeZone: 'Europe/Brussels'
+          }
+        }
+
+        if (keuring.type.includes(TypeKeuring.EPC)) {
+          await axios.post('http://localhost:3000/events/epc', event, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } }).then((e) => (keuringForm.event_ID = e.data.id))
+        }
+
+        if (keuring.type.includes(TypeKeuring.ASBEST)) {
+          await axios
+            .post('http://localhost:3000/events/asbest', event, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
+            .then((e) => (keuringForm.asbest_event_ID = e.data.id))
+        }
+      }
+    }
+  }
+
   const editAsbestEventToDate = async (id: string, newPbDate: Date) => {
     const endTime = new Date(newPbDate)
     endTime.setMinutes(newPbDate.getMinutes() + 45)
@@ -405,9 +440,13 @@
     if (datum_plaatsbezoek_edited.value && keuringForm.datum_plaatsbezoek) {
       if (keuringForm.event_ID) {
         await editEPCEventToDate(keuringForm.event_ID, keuringForm.datum_plaatsbezoek)
+      } else if (keuringForm.type.includes(TypeKeuring.EPC)) {
+        await addEventToDate(keuringForm)
       }
       if (keuringForm.asbest_event_ID) {
         await editAsbestEventToDate(keuringForm.asbest_event_ID, keuringForm.datum_plaatsbezoek)
+      } else if (keuringForm.type.includes(TypeKeuring.ASBEST)) {
+        await addEventToDate(keuringForm)
       }
     }
 
@@ -432,10 +471,14 @@
         created_by: keuringForm.created_by.id,
         klant_ID: keuringForm.klantID,
         facturatie_ID: keuringForm.facturatieID,
-        facturatie_bestemming: keuringForm.facturatie_bestemming
+        facturatie_bestemming: keuringForm.facturatie_bestemming,
+        event_ID: keuringForm.event_ID,
+        asbest_event_ID: keuringForm.asbest_event_ID
       })
       .eq('id', route.params.id)
-      .select('*, created_by: gebruikers(*, organisatie: organisaties(*)), klant: klanten(*), adres: adressen(*, vlaamse_stad: vlaamse_steden(*)), facturatie: facturaties(*)')
+      .select(
+        '*, created_by: gebruikers(*, organisatie: organisaties(*)), klant: klanten(*), adres: adressen(*, vlaamse_stad: vlaamse_steden(*)), facturatie: facturaties(*), event_ID, asbest_event_ID'
+      )
       .single()
 
     if (updatedKeuring) {
