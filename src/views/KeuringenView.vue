@@ -21,11 +21,7 @@
 
   const filterKeuringen = () => {
     return keuringenStore.keuringen.filter((keuring) => {
-      // if (keuring.klant) {
       return `${keuring.klantID} ${keuring.klantID}`.toLowerCase().includes(filterOp.value.toLowerCase())
-      // ||
-      // keuring.adresID.toLowerCase().includes(filterOp.value.toLowerCase())
-      // }
     })
   }
 
