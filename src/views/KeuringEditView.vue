@@ -722,27 +722,6 @@
             cancel-text="Sluiten"
             select-text="Selecteer"
           />
-          <!--
-            <add-to-calendar-button
-            v-if="keuringForm.datum_plaatsbezoek"
-            size="1"
-            label="Toevoegen aan agenda"
-            :name="keuringAddress.nummer + ' ' + keuringAddress.straatnaam + ', ' + vlaamseStad.postcode + ' ' + vlaamseStad.gemeente"
-            :location="keuringAddress.nummer + ' ' + keuringAddress.straatnaam + ', ' + vlaamseStad.postcode + ' ' + vlaamseStad.gemeente"
-            :description="`${keuringForm.type.join(' + ')} keuring\n${keuringClient.voornaam} ${keuringClient.achternaam}\n${keuringClient.emailadres}\n${keuringClient.telefoonnummer.replace(
-              /(\d{4})(\d{2})(\d{2})(\d{2})/,
-              '$1 $2 $3 $4'
-            )}`"
-            options="Google"
-            buttonsList
-            buttonStyle="round"
-            startDate="2024-03-10"
-            :startTime="keuringPlaatsbezoekStartTime"
-            :endTime="keuringPlaatsbezoekEndTime"
-            timeZone="Europe/Brussels"
-            language="nl"
-          ></add-to-calendar-button>
-          -->
         </div>
         <div class="uploader-wrapper">
           <Button :disabled="!keuringForm.adresID || !keuringForm.klantID" raised severity="warning" @click="handleCertificatenClick">
@@ -963,7 +942,6 @@
           accent-color: seagreen;
 
           label {
-            // font-size: 1.4rem;
             margin-left: 1rem;
           }
 
