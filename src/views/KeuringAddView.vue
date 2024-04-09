@@ -27,6 +27,9 @@
   import axios from 'axios'
   import Button from 'primevue/button'
   import Checkbox from 'primevue/checkbox'
+  import IconField from 'primevue/iconfield'
+  import InputIcon from 'primevue/inputicon'
+  import InputText from 'primevue/inputtext'
   import RadioButton from 'primevue/radiobutton'
   import Textarea from 'primevue/textarea'
   import { useToast } from 'primevue/usetoast'
@@ -88,6 +91,7 @@
   const extraDocsFormVisible = ref<boolean>(false)
   const isCancelModalOpen = ref<boolean>(false)
   const datum_plaatsbezoek_edited = ref<boolean>(false)
+  const editClientEmailPhoneNumber = ref<boolean>(false)
 
   const keuringAddress = computed(() => {
     return adressenStore.adressen.find((adres: Adres) => adres.id === keuringForm.adresID)
@@ -286,20 +290,7 @@
 
       keuringenStore.addKeuring({
         id: uploadedKeuring.id,
-        // klant: {
-        //   id: uploadedKeuring.klant.id,
-        //   voornaam: uploadedKeuring.klant.voornaam,
-        //   achternaam: uploadedKeuring.klant.achternaam,
-        //   emailadres: uploadedKeuring.klant.emailadres,
-        //   telefoonnummer: uploadedKeuring.klant.telefoonnummer
-        // },
         klantID: uploadedKeuring.klant_ID,
-        // adres: {
-        //   id: uploadedKeuring.adres.id,
-        //   straatnaam: uploadedKeuring.adres.straatnaam,
-        //   nummer: uploadedKeuring.adres.nummer,
-        //   vlaamse_stad_ID: uploadedKeuring.adres.vlaamse_stad
-        // },
         adresID: uploadedKeuring.adres_ID,
         status: uploadedKeuring.status,
         type: uploadedKeuring.type,
@@ -426,6 +417,24 @@
     extraDocsFormVisible.value = !extraDocsFormVisible.value
     certificatesFormVisible.value = false
   }
+
+  const handleConfirmEdit = async () => {
+    if (keuringClient.value && keuringClient.value.id) {
+      const { error } = await supabase
+        .from('klanten')
+        .update({
+          emailadres: keuringClient.value.emailadres,
+          telefoonnummer: keuringClient.value.telefoonnummer
+        })
+        .eq('id', keuringClient.value.id)
+
+      if (error) {
+        console.error('Error updating klant: ', error)
+        return
+      }
+      editClientEmailPhoneNumber.value = false
+    }
+  }
 </script>
 
 <template>
@@ -461,8 +470,10 @@
             <div class="adres">
               {{ kAdres }}
             </div>
-            <div @click="handleAddressCloseClick">
-              <Icon icon="mdi:close" width="20" />
+            <div class="edit-close">
+              <div @click="handleAddressCloseClick">
+                <Icon icon="mdi:close" width="20" />
+              </div>
             </div>
           </div>
         </div>
@@ -477,10 +488,35 @@
               <div class="name">
                 {{ `${keuringClient.voornaam} ${keuringClient.achternaam}` }}
               </div>
-              <div class="email-tel">@{{ `${keuringClient.emailadres} - ${keuringClient.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')}` }}</div>
+              <div class="email-tel" v-if="editClientEmailPhoneNumber">
+                <IconField iconPosition="left">
+                  <InputIcon class="pi pi-envelope"></InputIcon>
+                  <InputText type="text" v-model="keuringClient.emailadres" />
+                </IconField>
+                <IconField iconPosition="left">
+                  <InputIcon class="pi pi-phone"></InputIcon>
+                  <InputText type="text" v-model="keuringClient.telefoonnummer" />
+                </IconField>
+              </div>
+              <div class="email-tel" v-else>
+                <span>
+                  {{ keuringClient.emailadres }}
+                </span>
+                <span>
+                  {{ keuringClient.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4') }}
+                </span>
+              </div>
             </div>
-            <div @click="handleClientCloseClick">
-              <Icon icon="mdi:close" width="20" />
+            <div class="edit-close">
+              <div @click="handleConfirmEdit" v-if="editClientEmailPhoneNumber">
+                <Icon icon="mdi:check" width="20" />
+              </div>
+              <div @click="editClientEmailPhoneNumber = true" v-else>
+                <Icon icon="mdi:pencil" width="20" />
+              </div>
+              <div @click="handleClientCloseClick">
+                <Icon icon="mdi:close" width="20" />
+              </div>
             </div>
           </div>
         </div>
@@ -709,7 +745,25 @@
       }
 
       .email-tel {
-        padding-top: 0.25em;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        justify-content: flex-start;
+        padding-top: 0.25rem;
+        color: #4b5563;
+
+        > span {
+          height: 24px;
+          padding-block: 0.5rem;
+          padding-inline: 25px;
+          border: 1px solid transparent;
+        }
+
+        input {
+          padding-block: 0.5rem;
+          font-size: 1rem;
+          font-family: 'Rubik', sans-serif;
+        }
       }
 
       .type {
@@ -787,7 +841,6 @@
           display: flex;
           gap: 1em;
           font-weight: bold;
-          // font-size: 1m;
           font-size: 1em;
 
           .text {
@@ -854,9 +907,28 @@
         justify-content: space-between;
         align-items: center;
 
-        div {
+        > div {
           display: flex;
           flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .edit-close {
+          display: flex;
+          flex-direction: row;
+          gap: 1rem;
+
+          div {
+            display: flex;
+            border-radius: 50%;
+            padding: 0.5rem;
+            cursor: pointer;
+
+            &:hover {
+              background-color: seagreen;
+              color: #fff;
+            }
+          }
         }
       }
     }
