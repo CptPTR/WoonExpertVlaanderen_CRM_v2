@@ -49,7 +49,9 @@ export type Keuring = {
   extra_documenten?: ExtraDocument[]
   opmerking: string,
   event_ID: string | null,
-  asbest_event_ID: string | null
+  asbest_event_ID: string | null,
+  epc_toegewezen_aan: string | null,
+  asbest_toegewezen_aan: string | null
 }
 
 export type Gebruiker = {
@@ -124,4 +126,6 @@ export type FormKeuring = {
   created_by: Gebruiker
   event_ID: string | null
   asbest_event_ID: string | null
+  epc_toegewezen_aan: string | null
+  asbest_toegewezen_aan: string | null
 }

@@ -15,6 +15,7 @@ import KeuringView from '../views/KeuringView.vue'
 import KeuringenView from '../views/KeuringenView.vue'
 import LoginView from '../views/LoginView.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
+import { useDeskundigenStore } from '@/stores/deskundigenStore'
 
 const checkSession: NavigationGuard = async (to, from, next) => {
   const {
@@ -33,6 +34,28 @@ const checkSession: NavigationGuard = async (to, from, next) => {
   } else {
     // If logged in and accessing a page other than login, proceed
     next()
+  }
+}
+
+const getDeskundigenData = async () => {
+  const deskundigenStore = useDeskundigenStore()
+
+  const {data} = await supabase.from("gebruikers").select("*").eq("rol", "deskundige")
+
+  if (data) {
+    data.map((deskundige) => {
+      deskundigenStore.addDeskundige({
+        id: deskundige.id,
+        voornaam: deskundige.voornaam,
+        achternaam: deskundige.achternaam,
+        email: deskundige.email,
+        telefoonnummer: deskundige.telefoonnummer,
+        avatar: deskundige.avatar,
+        rol: deskundige.rol,
+        specialisatie: deskundige.specialisatie,
+        organisatie: deskundige.organisatieID
+      })
+    })
   }
 }
 
@@ -76,7 +99,9 @@ const getKeuringData = async () => {
         opmerking: keuring.opmerking,
         facturatie_bestemming: keuring.facturatie_bestemming, 
         event_ID: keuring.event_ID, 
-        asbest_event_ID: keuring.asbest_event_ID
+        asbest_event_ID: keuring.asbest_event_ID,
+        epc_toegewezen_aan: keuring.epc_toegewezen_aan,
+        asbest_toegewezen_aan: keuring.asbest_toegewezen_aan
       })
     })
   }
@@ -243,11 +268,16 @@ router.beforeEach(async (to) => {
   const authStore = useAuthStore()
 
   if (to.path.startsWith('/keuringen')) {
+    const deskundigenStore = useDeskundigenStore()
     const keuringenStore = useKeuringenStore()
     const vlaamseStedenStore = useVlaamseStedenStore()
     const adressenStore = useAdressenStore()
     const klantenStore = useKlantenStore()
     const facturatieStore = useFacturatiesStore()
+
+    if (!deskundigenStore.deskundigen.length) {
+      await getDeskundigenData()
+    }
 
     if (!keuringenStore.keuringen.length) {
       await getKeuringData()

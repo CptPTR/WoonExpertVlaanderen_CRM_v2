@@ -15,25 +15,27 @@
   import { useAdressenStore } from '@/stores/adressenStore'
   import { useAuthStore } from '@/stores/authStore'
   import { useCertificaatStore } from '@/stores/certificatenStore'
+  import { useDeskundigenStore } from '@/stores/deskundigenStore'
   import { useExtraDocumentStore } from '@/stores/extraDocumentenStore'
   import { useFacturatiesStore } from '@/stores/facturatiesStore'
   import { useKeuringenStore } from '@/stores/keuringenStore'
   import { useKlantenStore } from '@/stores/klantenStore'
   import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
-  import type { Adres, FormKeuring } from '@/types'
+  import type { Adres, FormKeuring, Gebruiker } from '@/types'
   import { Icon } from '@iconify/vue'
   import VueDatePicker from '@vuepic/vue-datepicker'
   import 'add-to-calendar-button'
   import axios from 'axios'
   import Button from 'primevue/button'
   import Checkbox from 'primevue/checkbox'
+  import Dropdown from 'primevue/dropdown'
   import IconField from 'primevue/iconfield'
   import InputIcon from 'primevue/inputicon'
   import InputText from 'primevue/inputtext'
   import RadioButton from 'primevue/radiobutton'
   import Textarea from 'primevue/textarea'
   import { useToast } from 'primevue/usetoast'
-  import { computed, reactive, ref } from 'vue'
+  import { computed, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
 
   const authStore = useAuthStore()
@@ -44,6 +46,7 @@
   const facturatiesStore = useFacturatiesStore()
   const extraDocumentenStore = useExtraDocumentStore()
   const vlaamseStedenStore = useVlaamseStedenStore()
+  const deskundigenStore = useDeskundigenStore()
   const router = useRouter()
   const toast = useToast()
 
@@ -84,7 +87,9 @@
       avatar: authStore.currentlyLoggedIn?.avatar as string
     },
     event_ID: null,
-    asbest_event_ID: null
+    asbest_event_ID: null,
+    epc_toegewezen_aan: null,
+    asbest_toegewezen_aan: null
   })
 
   const certificatesFormVisible = ref<boolean>(false)
@@ -92,6 +97,31 @@
   const isCancelModalOpen = ref<boolean>(false)
   const datum_plaatsbezoek_edited = ref<boolean>(false)
   const editClientEmailPhoneNumber = ref<boolean>(false)
+
+  watch(
+    () => keuringForm.type,
+    (newType, oldType) => {
+      if (newType.includes(TypeKeuring.EPC)) {
+        const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'dclercqpeter@gmail.com')!
+
+        if (epcDeskundige.id) {
+          keuringForm.epc_toegewezen_aan = epcDeskundige.id
+        }
+      } else {
+        keuringForm.epc_toegewezen_aan = null
+      }
+
+      if (newType.includes(TypeKeuring.ASBEST)) {
+        const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'peter.asbest.wev@gmail.com')!
+
+        if (asbestDeskundige.id) {
+          keuringForm.asbest_toegewezen_aan = asbestDeskundige.id
+        }
+      } else {
+        keuringForm.asbest_toegewezen_aan = null
+      }
+    }
+  )
 
   const keuringAddress = computed(() => {
     return adressenStore.adressen.find((adres: Adres) => adres.id === keuringForm.adresID)
@@ -125,6 +155,16 @@
 
   const asbest_certificaten = computed(() => {
     return certificatenStore.certificaten.filter((cert) => cert.type.includes(TypeKeuring.ASBEST))
+  })
+
+  const dropdownEPCValue = computed(() => {
+    const value = deskundigenStore.deskundigen.filter((d: Gebruiker) => d.id === keuringForm.epc_toegewezen_aan)[0]
+    return `${value.voornaam} ${value.achternaam}`
+  })
+
+  const dropdownAsbestValue = computed(() => {
+    const value = deskundigenStore.deskundigen.filter((d: Gebruiker) => d.id === keuringForm.asbest_toegewezen_aan)[0]
+    return `${value.voornaam} ${value.achternaam}`
   })
 
   const uploadExtraDocumenten = async (event: Event) => {
@@ -240,7 +280,9 @@
           toegang_eenheid: keuringForm.toegang_eenheid,
           datum_plaatsbezoek: keuringForm.datum_plaatsbezoek,
           event_ID: keuringForm.event_ID,
-          asbest_event_ID: keuringForm.asbest_event_ID
+          asbest_event_ID: keuringForm.asbest_event_ID,
+          epc_toegewezen_aan: keuringForm.epc_toegewezen_aan,
+          asbest_toegewezen_aan: keuringForm.asbest_toegewezen_aan
         }
       ])
       .select('*, created_by: gebruikers(*, organisatie: organisaties(*)), klant: klanten(*), adres: adressen(*, vlaamse_stad: vlaamse_steden(*)), facturatie: facturaties(*)')
@@ -301,7 +343,9 @@
         opmerking: uploadedKeuring.opmerking,
         facturatieID: uploadedKeuring.facturatie_ID,
         event_ID: uploadedKeuring.event_ID,
-        asbest_event_ID: uploadedKeuring.asbest_event_ID
+        asbest_event_ID: uploadedKeuring.asbest_event_ID,
+        epc_toegewezen_aan: uploadedKeuring.epc_toegewezen_aan,
+        asbest_toegewezen_aan: uploadedKeuring.asbest_toegewezen_aan
       })
 
       certificatenStore.empty()
@@ -342,12 +386,14 @@
         }
 
         if (keuring.type.includes(TypeKeuring.EPC)) {
-          await axios.post('http://localhost:3000/events/epc', event, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } }).then((e) => (keuringForm.event_ID = e.data.id))
+          await axios
+            .post('http://localhost:3000/events/epc', { ...event, assigned_to: null }, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
+            .then((e) => (keuringForm.event_ID = e.data.id))
         }
 
         if (keuring.type.includes(TypeKeuring.ASBEST)) {
           await axios
-            .post('http://localhost:3000/events/asbest', event, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
+            .post('http://localhost:3000/events/asbest', { ...event, assigned_to: null }, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
             .then((e) => (keuringForm.asbest_event_ID = e.data.id))
         }
       }
@@ -454,6 +500,40 @@
             <Checkbox v-model="keuringForm.type" inputId="tkAsbest" :value="TypeKeuring.ASBEST" />
             <label for="tkAsbest" class="ml-2">{{ TypeKeuring.ASBEST }}</label>
           </span>
+        </div>
+        <div class="toegewezen-aan-wrapper" v-if="(keuringForm.epc_toegewezen_aan || keuringForm.asbest_toegewezen_aan) && authStore.currentlyLoggedIn.id === 'f7874a89-e5e9-4b1b-a773-77471bf35873'">
+          <div class="data-row">
+            <div class="toegewezen-aan" v-if="keuringForm.epc_toegewezen_aan">
+              EPC
+              <Dropdown v-model="keuringForm.epc_toegewezen_aan" :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.EPC))" optionValue="id">
+                <template #value="">
+                  <div>
+                    {{ dropdownEPCValue }}
+                  </div>
+                </template>
+                <template #option="slotProps">
+                  <div>
+                    {{ `${slotProps.option.voornaam} ${slotProps.option.achternaam}` }}
+                  </div>
+                </template>
+              </Dropdown>
+            </div>
+            <div class="toegewezen-aan" v-if="keuringForm.asbest_toegewezen_aan">
+              Asbest
+              <Dropdown v-model="keuringForm.asbest_toegewezen_aan" :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.ASBEST))" optionValue="id">
+                <template #value="">
+                  <div>
+                    {{ dropdownAsbestValue }}
+                  </div>
+                </template>
+                <template #option="slotProps">
+                  <div>
+                    {{ `${slotProps.option.voornaam} ${slotProps.option.achternaam}` }}
+                  </div>
+                </template>
+              </Dropdown>
+            </div>
+          </div>
         </div>
         <div class="toegang-eenheid">
           <span class="rb-klant">
@@ -670,6 +750,38 @@
     }
   }
 
+  .data-row {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .edit-close {
+      display: flex;
+      flex-direction: row;
+      gap: 1rem;
+
+      div {
+        display: flex;
+        border-radius: 50%;
+        padding: 0.5rem;
+        cursor: pointer;
+
+        &:hover {
+          background-color: seagreen;
+          color: #fff;
+        }
+      }
+    }
+  }
+
   .add-keuring {
     font-family: 'Rubik', sans-serif;
     margin-bottom: 5rem;
@@ -727,11 +839,17 @@
 
       label,
       textarea,
+      .toegewezen-aan,
       .adres,
       .name {
         font-size: 1.4em;
       }
 
+      .toegewezen-aan {
+        width: 50%;
+      }
+
+      .toegewezen-aan,
       .adres,
       .klant,
       .name,
@@ -808,6 +926,7 @@
         }
       }
 
+      .toegewezen-aan-wrapper,
       .opmerking,
       .adres-wrapper,
       .adres-error,
@@ -819,6 +938,7 @@
         padding-left: 1em;
       }
 
+      .toegewezen-aan-wrapper,
       .opmerking,
       .adres-wrapper,
       .klant-wrapper,
@@ -899,37 +1019,6 @@
         display: flex;
         flex-direction: column;
         gap: 1.5em;
-      }
-
-      .data-row {
-        flex: 1;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        > div {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .edit-close {
-          display: flex;
-          flex-direction: row;
-          gap: 1rem;
-
-          div {
-            display: flex;
-            border-radius: 50%;
-            padding: 0.5rem;
-            cursor: pointer;
-
-            &:hover {
-              background-color: seagreen;
-              color: #fff;
-            }
-          }
-        }
       }
     }
 

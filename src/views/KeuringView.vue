@@ -6,6 +6,7 @@
   import { ToegangEenheid } from '@/enums/modules/ToegangEenheid'
   import { useAdressenStore } from '@/stores/adressenStore'
   import { useCertificaatStore } from '@/stores/certificatenStore'
+  import { useDeskundigenStore } from '@/stores/deskundigenStore'
   import { useExtraDocumentStore } from '@/stores/extraDocumentenStore'
   import { useFacturatiesStore } from '@/stores/facturatiesStore'
   import { useKeuringenStore } from '@/stores/keuringenStore'
@@ -25,6 +26,7 @@
   const router = useRouter()
   const paramId = route.params.id as string
 
+  const deskundigenStore = useDeskundigenStore()
   const keuringenStore = useKeuringenStore()
   const extraDocumentenStore = useExtraDocumentStore()
   const certificatenStore = useCertificaatStore()
@@ -132,7 +134,7 @@
         minute: '2-digit'
       })
     }
-    return ''
+    return null
   })
 
   const kClient = computed(() => {
@@ -172,6 +174,22 @@
     return ''
   })
 
+  const epcToegewezenAan = computed(() => {
+    if (keuring.value && keuring.value.epc_toegewezen_aan) {
+      const deskundige = deskundigenStore.getDeskundige(keuring.value.epc_toegewezen_aan)
+      return `${deskundige.voornaam} ${deskundige.achternaam}`
+    }
+    return null
+  })
+
+  const asbestToegewezenAan = computed(() => {
+    if (keuring.value && keuring.value.asbest_toegewezen_aan) {
+      const deskundige = deskundigenStore.getDeskundige(keuring.value.asbest_toegewezen_aan)
+      return `${deskundige.voornaam} ${deskundige.achternaam}`
+    }
+    return null
+  })
+
   onMounted(async () => {
     keuring.value = keuringenStore.getKeuring(paramId)
 
@@ -198,6 +216,14 @@
       <div class="info">
         <span :title="`aangemaakt door ${keuring.created_by.organisatie.naam}`" class="created-by">
           {{ keuring.created_by.organisatie.naam }}
+        </span>
+        <span :title="`EPC -> ${epcToegewezenAan}`" class="toegewezen-aan" v-if="epcToegewezenAan">
+          <span class="meta-badge">EPC</span>
+          {{ epcToegewezenAan }}
+        </span>
+        <span :title="`Asbest -> ${asbestToegewezenAan}`" class="toegewezen-aan" v-if="asbestToegewezenAan">
+          <span class="meta-badge">Asbest</span>
+          {{ asbestToegewezenAan }}
         </span>
         <span :title="keuring.toegang_eenheid" class="toegang-eenheid">
           <Icon :icon="keuring.toegang_eenheid === ToegangEenheid.KLANT ? 'mdi:handshake-outline' : 'mdi:key'" width="20" color="#fff" />
@@ -383,6 +409,23 @@
 
       .created-by {
         background-color: darkcyan;
+      }
+
+      .toegewezen-aan {
+        position: relative;
+        background-color: seagreen;
+
+        .meta-badge {
+          display: flex;
+          font-size: 0.9rem;
+          background-color: mediumseagreen;
+          position: absolute;
+          top: -8px;
+          left: 8px;
+          padding: 0.3rem;
+          margin: 0;
+          height: auto;
+        }
       }
 
       .toegang-eenheid {
