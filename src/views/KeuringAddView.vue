@@ -75,6 +75,7 @@
     extra_documenten: [],
     created_by: {
       id: authStore.currentlyLoggedIn?.id as string,
+      gebruikersnaam: authStore.currentlyLoggedIn?.gebruikersnaam as string,
       voornaam: authStore.currentlyLoggedIn?.voornaam as string,
       achternaam: authStore.currentlyLoggedIn?.achternaam as string,
       email: authStore.currentlyLoggedIn?.email as string,
@@ -285,7 +286,7 @@
           asbest_toegewezen_aan: keuringForm.asbest_toegewezen_aan
         }
       ])
-      .select('*, created_by: gebruikers(*, organisatie: organisaties(*)), klant: klanten(*), adres: adressen(*, vlaamse_stad: vlaamse_steden(*)), facturatie: facturaties(*)')
+      .select('*, created_by: gebruikers!keuringen_created_by_fkey(*, organisatie: organisaties(*))')
       .single()
 
     const { error: errorUploadedEPCCertificaat } = await supabase.from('certificaten').insert(
@@ -350,8 +351,44 @@
 
       certificatenStore.empty()
       extraDocumentenStore.empty()
+
+      if (uploadedKeuring.epc_toegewezen_aan) {
+        const epcDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.epc_toegewezen_aan === deskundige.id && deskundige.email !== 'dclercqpeter@gmail.com')!
+        epcDeskundigen.map(async (deskundige) => {
+          await sendMail(
+            deskundige.email,
+            `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
+            uploadedKeuring.type,
+            `http://localhost:5173/keuringen/${uploadedKeuring.id}`
+          )
+        })
+      }
+
+      if (uploadedKeuring.asbest_toegewezen_aan && uploadedKeuring.asbest_toegewezen_aan !== uploadedKeuring.epc_toegewezen_aan) {
+        const asbestDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.asbest_toegewezen_aan === deskundige.id && deskundige.email !== 'dclercqpeter@gmail.com')!
+        asbestDeskundigen.map(async (deskundige) => {
+          await sendMail(
+            deskundige.email,
+            `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
+            uploadedKeuring.type,
+            `http://localhost:5173/keuringen/${uploadedKeuring.id}`
+          )
+        })
+      }
+
+      await sendMail(
+        'dclercqpeter@gmail.com',
+        `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
+        uploadedKeuring.type,
+        `http://localhost:5173/keuringen/${uploadedKeuring.id}`
+      )
+
       router.push('/keuringen')
     }
+  }
+
+  const sendMail = async (to: string, subject: string, type: string, link: string) => {
+    await axios.post('http://localhost:3001/send-mail', { to, subject, type, link })
   }
 
   const handleDate = () => {
@@ -375,26 +412,31 @@
           description: `${keuringForm.type.join(' + ')} keuring\n${keuringClient.value.voornaam} ${keuringClient.value.achternaam}\n${keuringClient.value.emailadres}\n${String(
             keuringClient.value.telefoonnummer
           ).replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')}`,
-          start: {
-            dateTime: keuring.datum_plaatsbezoek,
-            timeZone: 'Europe/Brussels'
-          },
-          end: {
-            dateTime: endTime,
-            timeZone: 'Europe/Brussels'
+          start: keuring.datum_plaatsbezoek,
+          end: endTime
+        }
+
+        const eventReceivingDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => deskundige.id === keuringForm.epc_toegewezen_aan || deskundige.id === keuringForm.asbest_toegewezen_aan)
+        for (const deskundige of eventReceivingDeskundigen) {
+          try {
+            const response = await axios.post(`http://localhost:3001/calendars/${deskundige.gebruikersnaam}/events`, {
+              eventSummary: event.summary,
+              eventLocation: event.location,
+              eventDescription: event.description,
+              eventStart: event.start,
+              eventEnd: event.end
+            })
+            if (keuringForm.type.includes(TypeKeuring.EPC) && !keuringForm.type.includes(TypeKeuring.ASBEST)) {
+              keuringForm.event_ID = response.data
+            } else if (keuringForm.type.includes(TypeKeuring.ASBEST) && !keuringForm.type.includes(TypeKeuring.EPC)) {
+              keuringForm.asbest_event_ID = response.data
+            } else {
+              keuringForm.event_ID = response.data
+              keuringForm.asbest_event_ID = response.data
+            }
+          } catch (error) {
+            console.error(error)
           }
-        }
-
-        if (keuring.type.includes(TypeKeuring.EPC)) {
-          await axios
-            .post('http://localhost:3000/events/epc', { ...event, assigned_to: null }, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
-            .then((e) => (keuringForm.event_ID = e.data.id))
-        }
-
-        if (keuring.type.includes(TypeKeuring.ASBEST)) {
-          await axios
-            .post('http://localhost:3000/events/asbest', { ...event, assigned_to: null }, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
-            .then((e) => (keuringForm.asbest_event_ID = e.data.id))
         }
       }
     }
@@ -916,7 +958,6 @@
           accent-color: seagreen;
 
           label {
-            // font-size: 1.4rem;
             margin-left: 1em;
           }
 

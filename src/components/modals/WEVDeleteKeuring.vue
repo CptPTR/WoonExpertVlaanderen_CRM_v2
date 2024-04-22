@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { supabase } from '@/config/supabase'
   import { useAdressenStore } from '@/stores/adressenStore'
+  import { useDeskundigenStore } from '@/stores/deskundigenStore'
   import { useKeuringenStore } from '@/stores/keuringenStore'
   import { useKlantenStore } from '@/stores/klantenStore'
   import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
@@ -23,6 +24,7 @@
   const vlaamseStedenStore = useVlaamseStedenStore()
   const adressenStore = useAdressenStore()
   const klantenStore = useKlantenStore()
+  const deskundigeStore = useDeskundigenStore()
 
   const vlaamseStad = computed(() => {
     return vlaamseStedenStore.getStadById(kAddress.value.vlaamse_stad_ID)
@@ -57,17 +59,21 @@
   const deleteKeuring = async (id: string) => {
     const { error } = await supabase.from('keuringen').delete().eq('id', id)
 
-    const k = keuringenStore.getKeuring(id)
+    const keuringToDelete = keuringenStore.getKeuring(id)
 
     if (error) {
       console.error(`Could not delete keuring with id ${id} from the database.`)
     } else {
-      if (k && k.event_ID) {
-        await axios.delete(`http://localhost:3000/events/epc/${k.event_ID}`, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
-      }
+      if (keuringToDelete) {
+        if (keuringToDelete.epc_toegewezen_aan) {
+          const epcDeskundige = deskundigeStore.deskundigen.find((deskundige) => keuringToDelete.epc_toegewezen_aan === deskundige.id)!
+          await axios.delete(`http://localhost:3001/calendars/${epcDeskundige.gebruikersnaam}/events/${keuringToDelete.event_ID}`)
+        }
 
-      if (k && k.asbest_event_ID) {
-        await axios.delete(`http://localhost:3000/events/asbest/${k.asbest_event_ID}`, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
+        if (keuringToDelete.asbest_toegewezen_aan && keuringToDelete.asbest_toegewezen_aan !== keuringToDelete.epc_toegewezen_aan) {
+          const asbestDeskundige = deskundigeStore.deskundigen.find((deskundige) => keuringToDelete.asbest_toegewezen_aan === deskundige.id)!
+          await axios.delete(`http://localhost:3001/calendars/${asbestDeskundige.gebruikersnaam}/events/${keuringToDelete.asbest_event_ID}`)
+        }
       }
 
       keuringenStore.removeKeuring(id)

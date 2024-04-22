@@ -35,7 +35,7 @@
   import RadioButton from 'primevue/radiobutton'
   import Textarea from 'primevue/textarea'
   import { useToast } from 'primevue/usetoast'
-  import { computed, onBeforeMount, onMounted, reactive, ref } from 'vue'
+  import { computed, onBeforeMount, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
 
   const authStore = useAuthStore()
@@ -80,6 +80,7 @@
     extra_documenten: [],
     created_by: {
       id: authStore.currentlyLoggedIn?.id as string,
+      gebruikersnaam: authStore.currentlyLoggedIn?.gebruikersnaam as string,
       voornaam: authStore.currentlyLoggedIn?.voornaam as string,
       achternaam: authStore.currentlyLoggedIn?.achternaam as string,
       email: authStore.currentlyLoggedIn?.email as string,
@@ -115,6 +116,31 @@
   const certificatesFormVisible = ref<boolean>(false)
   const extraDocsFormVisible = ref<boolean>(false)
   const isCancelModalOpen = ref<boolean>(false)
+
+  watch(
+    () => keuringForm.type,
+    (newType, oldType) => {
+      if (newType.includes(TypeKeuring.EPC)) {
+        const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'dclercqpeter@gmail.com')!
+
+        if (epcDeskundige.id) {
+          keuringForm.epc_toegewezen_aan = epcDeskundige.id
+        }
+      } else {
+        keuringForm.epc_toegewezen_aan = null
+      }
+
+      if (newType.includes(TypeKeuring.ASBEST)) {
+        const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'peter.asbest.wev@gmail.com')!
+
+        if (asbestDeskundige.id) {
+          keuringForm.asbest_toegewezen_aan = asbestDeskundige.id
+        }
+      } else {
+        keuringForm.asbest_toegewezen_aan = null
+      }
+    }
+  )
 
   onBeforeMount(async () => {
     try {
@@ -376,27 +402,21 @@
     }
   }
 
-  const editEPCEventToDate = async (id: string, newPbDate: Date) => {
+  const editEventToDate = async (username: string, eventId: string, newPbDate: Date) => {
     const endTime = new Date(newPbDate)
     endTime.setMinutes(newPbDate.getMinutes() + 45)
 
-    await axios.put(
-      `http://localhost:3000/events/epc/${id}`,
-      {
-        start: {
-          dateTime: newPbDate,
-          timeZone: 'Europe/Brussels'
-        },
-        end: {
-          dateTime: endTime,
-          timeZone: 'Europe/Brussels'
-        }
-      },
-      { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } }
-    )
+    try {
+      await axios.put(`http://localhost:3001/calendars/${username}/events/${eventId}`, {
+        eventStart: newPbDate,
+        eventEnd: endTime
+      })
+    } catch (error) {
+      console.error(error)
+    }
   }
 
-  const addEventToDate = async (keuring: FormKeuring) => {
+  const addEventToCalendar = async (keuring: FormKeuring) => {
     if (keuringClient.value) {
       if (keuring.datum_plaatsbezoek && keuringAddress.value && vlaamseStad.value) {
         const endTime = new Date(keuring.datum_plaatsbezoek)
@@ -408,62 +428,58 @@
           description: `${keuringForm.type.join(' + ')} keuring\n${keuringClient.value.voornaam} ${keuringClient.value.achternaam}\n${keuringClient.value.emailadres}\n${String(
             keuringClient.value.telefoonnummer
           ).replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')}`,
-          start: {
-            dateTime: keuring.datum_plaatsbezoek,
-            timeZone: 'Europe/Brussels'
-          },
-          end: {
-            dateTime: endTime,
-            timeZone: 'Europe/Brussels'
+          start: keuring.datum_plaatsbezoek,
+          end: endTime
+        }
+
+        const eventReceivingDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => deskundige.id === keuringForm.epc_toegewezen_aan || deskundige.id === keuringForm.asbest_toegewezen_aan)
+        for (const deskundige of eventReceivingDeskundigen) {
+          try {
+            const response = await axios.post(`http://localhost:3001/calendars/${deskundige.gebruikersnaam}/events`, {
+              eventSummary: event.summary,
+              eventLocation: event.location,
+              eventDescription: event.description,
+              eventStart: event.start,
+              eventEnd: event.end
+            })
+            if (keuringForm.type.includes(TypeKeuring.EPC) && !keuringForm.type.includes(TypeKeuring.ASBEST)) {
+              keuringForm.event_ID = response.data
+            } else if (keuringForm.type.includes(TypeKeuring.ASBEST) && !keuringForm.type.includes(TypeKeuring.EPC)) {
+              keuringForm.asbest_event_ID = response.data
+            } else {
+              keuringForm.event_ID = response.data
+              keuringForm.asbest_event_ID = response.data
+            }
+          } catch (error) {
+            console.error(error)
           }
-        }
-
-        if (keuring.type.includes(TypeKeuring.EPC)) {
-          await axios.post('http://localhost:3000/events/epc', event, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } }).then((e) => (keuringForm.event_ID = e.data.id))
-        }
-
-        if (keuring.type.includes(TypeKeuring.ASBEST)) {
-          await axios
-            .post('http://localhost:3000/events/asbest', event, { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } })
-            .then((e) => (keuringForm.asbest_event_ID = e.data.id))
         }
       }
     }
   }
 
-  const editAsbestEventToDate = async (id: string, newPbDate: Date) => {
-    const endTime = new Date(newPbDate)
-    endTime.setMinutes(newPbDate.getMinutes() + 45)
-
-    await axios.put(
-      `http://localhost:3000/events/asbest/${id}`,
-      {
-        start: {
-          dateTime: newPbDate,
-          timeZone: 'Europe/Brussels'
-        },
-        end: {
-          dateTime: endTime,
-          timeZone: 'Europe/Brussels'
-        }
-      },
-      { headers: { Authorization: `Bearer ${process.env.GOOGLE_CLIENT_SECRET}` } }
-    )
-  }
-
   const submitForm = async (event: Event) => {
     event.preventDefault()
 
+    const eventEditedDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => deskundige.id === keuringForm.epc_toegewezen_aan || deskundige.id === keuringForm.asbest_toegewezen_aan)
+
     if (datum_plaatsbezoek_edited.value && keuringForm.datum_plaatsbezoek) {
       if (keuringForm.event_ID) {
-        await editEPCEventToDate(keuringForm.event_ID, keuringForm.datum_plaatsbezoek)
+        if (keuringForm.epc_toegewezen_aan) {
+          const epcDeskundige = eventEditedDeskundigen.find((deskundige) => keuringForm.epc_toegewezen_aan === deskundige.id)!
+          await editEventToDate(epcDeskundige.gebruikersnaam, keuringForm.event_ID, keuringForm.datum_plaatsbezoek)
+        }
       } else if (keuringForm.type.includes(TypeKeuring.EPC)) {
-        await addEventToDate(keuringForm)
+        await addEventToCalendar(keuringForm)
       }
+
       if (keuringForm.asbest_event_ID) {
-        await editAsbestEventToDate(keuringForm.asbest_event_ID, keuringForm.datum_plaatsbezoek)
+        if (keuringForm.asbest_toegewezen_aan) {
+          const asbestDeskundige = eventEditedDeskundigen.find((deskundige) => keuringForm.asbest_toegewezen_aan === deskundige.id)!
+          await editEventToDate(asbestDeskundige.gebruikersnaam, keuringForm.asbest_event_ID, keuringForm.datum_plaatsbezoek)
+        }
       } else if (keuringForm.type.includes(TypeKeuring.ASBEST)) {
-        await addEventToDate(keuringForm)
+        await addEventToCalendar(keuringForm)
       }
     }
 
@@ -495,9 +511,7 @@
         asbest_toegewezen_aan: keuringForm.asbest_toegewezen_aan
       })
       .eq('id', route.params.id)
-      .select(
-        '*, created_by: gebruikers(*, organisatie: organisaties(*)), klant: klanten(*), adres: adressen(*, vlaamse_stad: vlaamse_steden(*)), facturatie: facturaties(*), event_ID, asbest_event_ID'
-      )
+      .select('*, created_by: gebruikers!keuringen_created_by_fkey(*, organisatie: organisaties(*))')
       .single()
 
     if (updatedKeuring) {

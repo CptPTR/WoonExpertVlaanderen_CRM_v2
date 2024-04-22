@@ -47,15 +47,16 @@ export type Keuring = {
   certificaten_epc?: Certificaat[]
   certificaten_asbest?: Certificaat[]
   extra_documenten?: ExtraDocument[]
-  opmerking: string,
-  event_ID: string | null,
-  asbest_event_ID: string | null,
-  epc_toegewezen_aan: string | null,
+  opmerking: string
+  event_ID: string | null
+  asbest_event_ID: string | null
+  epc_toegewezen_aan: string | null
   asbest_toegewezen_aan: string | null
 }
 
 export type Gebruiker = {
   id?: string
+  gebruikersnaam: string
   voornaam: string
   achternaam: string
   email: string
