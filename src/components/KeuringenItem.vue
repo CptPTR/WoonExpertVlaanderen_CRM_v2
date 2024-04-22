@@ -98,7 +98,6 @@
   </td>
   <td class="adres" v-if="keuring.adresID">
     <span class="straatnaam-nummer">
-      <!-- {{ keuring.adresID + ' ' + keuring.adresID }} -->
       {{ kAddress.straatnaam + ' ' + kAddress.nummer }}
     </span>
     <br />

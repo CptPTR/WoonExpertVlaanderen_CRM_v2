@@ -11,11 +11,6 @@
     <div class="content container">
       <nav>
         <img src="./assets/images/wev_logo.svg" alt="logo" height="58" />
-
-        <!-- <ul>
-          <RouterLink to="/keuringen" :class="currentRoute.path.startsWith('/keuringen') ? 'current' : null">keuringen
-          </RouterLink>
-        </ul> -->
       </nav>
       <UserProfile />
     </div>

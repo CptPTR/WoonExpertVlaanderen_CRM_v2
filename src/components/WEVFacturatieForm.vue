@@ -67,13 +67,6 @@
           straatnaam: fac.straatnaam,
           nummer: fac.nummer,
           organisatie: null,
-          // vlaamse_stad: {
-          //   id: fac.vlaamse_stad.id,
-          //   gemeente: fac.vlaamse_stad.gemeente,
-          //   stad: fac.vlaamse_stad.stad,
-          //   provincie: fac.vlaamse_stad.provincie,
-          //   postcode: fac.vlaamse_stad.postcode
-          // },
           vlaamse_stad_ID: fac.vlaamse_stad_ID
         })
       })
@@ -133,7 +126,6 @@
             />
           </div>
         </div>
-        <!-- @selectFacturatie="selectFacturatie" -->
         <FacturatieList
           @select-facturatie="(id: string) => selectFacturatie(id)"
           :selectedFacturatie="form.facturatieID"
@@ -222,16 +214,4 @@
       width: 100px;
     }
   }
-
-  // .gevonden-adressen {
-  //     margin-top: 2rem;
-
-  //     .gevonden-adres {
-  //         width: fit-content;
-  //         padding: 0.5rem 1rem;
-  //         border: 1px solid #000;
-  //         border-radius: 2rem;
-  //         cursor: pointer;
-  //     }
-  // }
 </style>

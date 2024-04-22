@@ -106,29 +106,4 @@
       }
     }
   }
-
-  // .extradocs {
-  //     display: flex;
-  //     gap: 20px;
-
-  //     >div {
-  //         flex: 1;
-  //         border-left: solid 1px #0000006c;
-  //         padding-left: 20px;
-
-  //         ul {
-  //             list-style: none;
-  //             max-height: 150px;
-  //             overflow-y: auto;
-  //             margin-block: 1rem;
-
-  //             li {
-  //                 display: flex;
-  //                 justify-content: space-between;
-  //                 font-size: 1.4rem;
-  //                 margin-block: 1rem;
-  //             }
-  //         }
-  //     }
-  // }
 </style>

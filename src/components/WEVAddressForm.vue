@@ -157,6 +157,5 @@
 
   input[id='nummer'] {
     width: 100px;
-    // flex: 1;
   }
 </style>

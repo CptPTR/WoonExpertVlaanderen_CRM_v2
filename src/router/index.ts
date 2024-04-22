@@ -1,11 +1,13 @@
 import { supabase } from '@/config/supabase'
 import { useAdressenStore } from '@/stores/adressenStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useDeskundigenStore } from '@/stores/deskundigenStore'
 import { useFacturatiesStore } from '@/stores/facturatiesStore'
 import { useKeuringenStore } from '@/stores/keuringenStore'
 import { useKlantenStore } from '@/stores/klantenStore'
 import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
 import type { Adres, Facturatie, Klant } from '@/types'
+import NotFoundView from '@/views/NotFoundView.vue'
 import ResetPasswordRequestView from '@/views/ResetPasswordRequest.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import { createRouter, createWebHistory, type NavigationGuard } from 'vue-router'
@@ -14,8 +16,6 @@ import KeuringEditView from '../views/KeuringEditView.vue'
 import KeuringView from '../views/KeuringView.vue'
 import KeuringenView from '../views/KeuringenView.vue'
 import LoginView from '../views/LoginView.vue'
-import NotFoundView from '@/views/NotFoundView.vue'
-import { useDeskundigenStore } from '@/stores/deskundigenStore'
 
 const checkSession: NavigationGuard = async (to, from, next) => {
   const {
@@ -40,12 +40,13 @@ const checkSession: NavigationGuard = async (to, from, next) => {
 const getDeskundigenData = async () => {
   const deskundigenStore = useDeskundigenStore()
 
-  const {data} = await supabase.from("gebruikers").select("*").eq("rol", "deskundige")
+  const { data } = await supabase.from('gebruikers').select('*').eq('rol', 'deskundige')
 
   if (data) {
     data.map((deskundige) => {
       deskundigenStore.addDeskundige({
         id: deskundige.id,
+        gebruikersnaam: deskundige.gebruikersnaam,
         voornaam: deskundige.voornaam,
         achternaam: deskundige.achternaam,
         email: deskundige.email,
@@ -62,12 +63,7 @@ const getDeskundigenData = async () => {
 const getKeuringData = async () => {
   const keuringenStore = useKeuringenStore()
 
-  const { data } = await supabase
-    .from('keuringen')
-    .select(
-      // '*, created_by: gebruikers(*, organisatie: organisaties(*)), klant: klanten(*), adres: adressen(*, vlaamse_stad: vlaamse_steden(*)), facturatie: facturaties(*, vlaamse_stad: vlaamse_steden(*))'
-      "*, created_by: gebruikers(*, organisatie: organisaties(*))"
-      )
+  const { data } = await supabase.from('keuringen').select('*, created_by: gebruikers!keuringen_created_by_fkey(*, organisatie: organisaties(*))')
 
   if (data) {
     data.map(async (keuring) => {
@@ -75,20 +71,6 @@ const getKeuringData = async () => {
         id: keuring.id,
         klantID: keuring.klant_ID,
         adresID: keuring.adres_ID,
-        // facturatie: keuring.facturatie_ID,
-        // facturatie: keuring.facturatie
-        //   ? {
-        //       id: keuring.facturatie.id,
-        //       voornaam: keuring.facturatie.voornaam,
-        //       achternaam: keuring.facturatie.achternaam,
-        //       emailadres: keuring.facturatie.emailadres,
-        //       telefoonnummer: keuring.facturatie.telefoonnummer,
-        //       straatnaam: keuring.facturatie.straatnaam,
-        //       nummer: keuring.facturatie.nummer,
-        //       vlaamse_stad_ID: keuring.facturatie.vlaamse_stad_ID,
-        //       organisatie: keuring.facturatie.organisatieID
-        //     }
-        //   : null,
         facturatieID: keuring.facturatie_ID,
         status: keuring.status,
         type: keuring.type,
@@ -97,8 +79,8 @@ const getKeuringData = async () => {
         datum_plaatsbezoek: keuring.datum_plaatsbezoek ? new Date(keuring.datum_plaatsbezoek) : null,
         created_by: keuring.created_by,
         opmerking: keuring.opmerking,
-        facturatie_bestemming: keuring.facturatie_bestemming, 
-        event_ID: keuring.event_ID, 
+        facturatie_bestemming: keuring.facturatie_bestemming,
+        event_ID: keuring.event_ID,
         asbest_event_ID: keuring.asbest_event_ID,
         epc_toegewezen_aan: keuring.epc_toegewezen_aan,
         asbest_toegewezen_aan: keuring.asbest_toegewezen_aan
@@ -119,13 +101,6 @@ const getAdressenData = async () => {
         id: adres.id,
         straatnaam: adres.straatnaam,
         nummer: adres.nummer,
-        // vlaamse_stad: {
-        //   id: adres.vlaamse_stad.id,
-        //   gemeente: adres.vlaamse_stad.gemeente,
-        //   stad: adres.vlaamse_stad.stad,
-        //   provincie: adres.vlaamse_stad.provincie,
-        //   postcode: adres.vlaamse_stad.postcode
-        // }
         vlaamse_stad_ID: adres.vlaamse_stad_ID
       })
     })
@@ -168,13 +143,6 @@ const getFacturatiesData = async () => {
         straatnaam: fac.straatnaam,
         nummer: fac.nummer,
         vlaamse_stad_ID: fac.vlaamse_stad_ID,
-        // vlaamse_stad: {
-        //   id: fac.vlaamse_stad.id,
-        //   gemeente: fac.vlaamse_stad.gemeente,
-        //   stad: fac.vlaamse_stad.stad,
-        //   provincie: fac.vlaamse_stad.provincie,
-        //   postcode: fac.vlaamse_stad.postcode
-        // },
         organisatie: fac.organisatie
       })
     })
@@ -312,6 +280,7 @@ router.beforeEach(async (to) => {
     if (gebruikerData) {
       authStore.setCurrentlyLoggedIn({
         id: gebruikerData.id,
+        gebruikersnaam: gebruikerData.gebruikersnaam,
         voornaam: gebruikerData.voornaam,
         achternaam: gebruikerData.achternaam,
         email: gebruikerData.email,

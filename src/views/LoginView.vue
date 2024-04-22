@@ -117,8 +117,6 @@
       .error {
         color: red;
         font-size: 1.1rem;
-        // bottom: 0;
-        // position: absolute;
       }
 
       button {
@@ -137,7 +135,6 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      // gap: 0.1rem;
       margin-top: 30px;
 
       p,

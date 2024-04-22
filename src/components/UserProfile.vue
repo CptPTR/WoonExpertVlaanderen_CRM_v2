@@ -60,8 +60,6 @@
           ...authStore.currentlyLoggedIn,
           avatar: uploadedAvatar.path
         })
-
-        // downloadAvatar()
       }
     }
   }
