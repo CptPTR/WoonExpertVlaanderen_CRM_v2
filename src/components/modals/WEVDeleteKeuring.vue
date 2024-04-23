@@ -65,12 +65,12 @@
       console.error(`Could not delete keuring with id ${id} from the database.`)
     } else {
       if (keuringToDelete) {
-        if (keuringToDelete.epc_toegewezen_aan) {
+        if (keuringToDelete.event_ID && keuringToDelete.epc_toegewezen_aan) {
           const epcDeskundige = deskundigeStore.deskundigen.find((deskundige) => keuringToDelete.epc_toegewezen_aan === deskundige.id)!
           await axios.delete(`http://localhost:3001/calendars/${epcDeskundige.gebruikersnaam}/events/${keuringToDelete.event_ID}`)
         }
 
-        if (keuringToDelete.asbest_toegewezen_aan && keuringToDelete.asbest_toegewezen_aan !== keuringToDelete.epc_toegewezen_aan) {
+        if (keuringToDelete.asbest_event_ID && keuringToDelete.asbest_toegewezen_aan && keuringToDelete.asbest_toegewezen_aan !== keuringToDelete.epc_toegewezen_aan) {
           const asbestDeskundige = deskundigeStore.deskundigen.find((deskundige) => keuringToDelete.asbest_toegewezen_aan === deskundige.id)!
           await axios.delete(`http://localhost:3001/calendars/${asbestDeskundige.gebruikersnaam}/events/${keuringToDelete.asbest_event_ID}`)
         }
