@@ -432,14 +432,6 @@
             if (deskundige.id === keuringForm.asbest_toegewezen_aan) {
               keuringForm.asbest_event_ID = response.data
             }
-            // if (keuringForm.type.includes(TypeKeuring.EPC) && !keuringForm.type.includes(TypeKeuring.ASBEST)) {
-            //   keuringForm.event_ID = response.data
-            // } else if (keuringForm.type.includes(TypeKeuring.ASBEST) && !keuringForm.type.includes(TypeKeuring.EPC)) {
-            //   keuringForm.asbest_event_ID = response.data
-            // } else {
-            //   keuringForm.event_ID = response.data
-            //   keuringForm.asbest_event_ID = response.data
-            // }
           } catch (error) {
             console.error(error)
           }
