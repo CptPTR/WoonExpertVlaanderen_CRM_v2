@@ -425,8 +425,6 @@
     const endTime = new Date(newPbDate)
     endTime.setMinutes(newPbDate.getMinutes() + 45)
 
-    console.log(`http://localhost:3001/calendars/${username}/events/${eventId}`)
-
     try {
       await axios.put(`http://localhost:3001/calendars/${username}/events/${eventId}`, {
         eventStart: newPbDate,
