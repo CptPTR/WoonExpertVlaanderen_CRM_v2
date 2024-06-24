@@ -365,7 +365,7 @@
             deskundige.email,
             `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
             uploadedKeuring.type,
-            `http://localhost:5173/keuringen/${uploadedKeuring.id}`
+            `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
           )
         })
       }
@@ -377,7 +377,7 @@
             deskundige.email,
             `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
             uploadedKeuring.type,
-            `http://localhost:5173/keuringen/${uploadedKeuring.id}`
+            `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
           )
         })
       }
@@ -386,7 +386,7 @@
         'dclercqpeter@gmail.com',
         `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
         uploadedKeuring.type,
-        `http://localhost:5173/keuringen/${uploadedKeuring.id}`
+        `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
       )
 
       router.push('/keuringen')
@@ -394,7 +394,7 @@
   }
 
   const sendMail = async (to: string, subject: string, type: string, link: string) => {
-    await axios.post('http://localhost:3001/send-mail', { to, subject, type, link })
+    await axios.post(`${process.env.BACKEND_BASE_URL}/send-mail`, { to, subject, type, link })
   }
 
   const handleDate = () => {
@@ -429,7 +429,7 @@
         const eventReceivingDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => deskundige.id === keuringForm.epc_toegewezen_aan || deskundige.id === keuringForm.asbest_toegewezen_aan)
         for (const deskundige of eventReceivingDeskundigen) {
           try {
-            const response = await axios.post(`http://localhost:3001/calendars/${deskundige.gebruikersnaam}/events`, {
+            const response = await axios.post(`${process.env.BACKEND_BASE_URL}/calendars/${deskundige.gebruikersnaam}/events`, {
               eventSummary: event.summary,
               eventLocation: event.location,
               eventDescription: event.description,

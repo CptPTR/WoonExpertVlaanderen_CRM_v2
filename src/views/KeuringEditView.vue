@@ -105,7 +105,7 @@
   }
 
   const sendNotifToCreator = async (to: string, subject: string, location: string, klant: string, date: string, type: TypeKeuring[]) => {
-    await axios.post('http://localhost:3001/notify-updated-date-visit', { to, subject, location, klant, date, type })
+    await axios.post(`${process.env.BACKEND_BASE_URL}/notify-updated-date-visit`, { to, subject, location, klant, date, type })
   }
 
   const notifyKeuringCreatorDateVisitIsPlanned = async () => {
@@ -426,7 +426,7 @@
     endTime.setMinutes(newPbDate.getMinutes() + 45)
 
     try {
-      await axios.put(`http://localhost:3001/calendars/${username}/events/${eventId}`, {
+      await axios.put(`${process.env.BACKEND_BASE_URL}/calendars/${username}/events/${eventId}`, {
         eventStart: newPbDate,
         eventEnd: endTime
       })
@@ -456,7 +456,7 @@
         }
 
         try {
-          const response = await axios.post(`http://localhost:3001/calendars/${to}/events`, {
+          const response = await axios.post(`${process.env.BACKEND_BASE_URL}/calendars/${to}/events`, {
             eventSummary: event.summary,
             eventLocation: event.location,
             eventDescription: event.description,
