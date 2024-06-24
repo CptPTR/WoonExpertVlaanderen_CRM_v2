@@ -45,17 +45,6 @@
     isActionsMenuOpen.value = false
   }
 
-  const formattedDateTime = computed(() => {
-    return keuring.datum_toewijzing.toLocaleString('nl-BE', {
-      timeZone: 'Europe/Brussels',
-      day: 'numeric',
-      month: '2-digit',
-      year: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  })
-
   const statusText = computed(() => {
     if (keuring.status === Status.INGEPLAND && keuring.datum_plaatsbezoek) {
       return `${keuring.status} op ${formatDate(new Date(keuring.datum_plaatsbezoek))}`
@@ -78,35 +67,36 @@
 </script>
 
 <template>
-  <td v-if="keuring.datum_toewijzing">
-    {{ formattedDateTime }}
+  <td v-if="keuring.datum_toewijzing" class="text-sm">
+    {{ formatDate(keuring.datum_toewijzing) }}
   </td>
-  <td>
-    {{ keuring.created_by.organisatie.naam }}
-  </td>
-  <td v-if="keuring.type">
+  <td v-if="keuring.type" class="text-sm">
     {{ keuring.type.toUpperCase() }}
   </td>
   <td class="klant" v-if="keuring.klantID">
-    <span class="naam">
+    <span class="naam text-sm">
       {{ kClient.voornaam + ' ' + kClient.achternaam }}
     </span>
     <br />
-    <span class="emailadres">
+    <span class="emailadres text-xs">
       {{ kClient.emailadres }}
     </span>
   </td>
   <td class="adres" v-if="keuring.adresID">
-    <span class="straatnaam-nummer">
+    <span class="straatnaam-nummer text-sm">
       {{ kAddress.straatnaam + ' ' + kAddress.nummer }}
+      {{ kAddress.busnummer ? kAddress.busnummer : '' }}
     </span>
     <br />
-    <span class="gemeente" v-if="vlaamseStad">
+    <span class="gemeente text-xs" v-if="vlaamseStad">
       {{ `${vlaamseStad.postcode} ${vlaamseStad.gemeente}` }}
     </span>
   </td>
+  <td class="text-sm">
+    {{ keuring.created_by.organisatie.naam }}
+  </td>
   <td>
-    <div class="status" :style="{ backgroundColor: getStatusColor(keuring.status) }">
+    <div class="status text-sm" :style="{ backgroundColor: getStatusColor(keuring.status) }">
       {{ statusText }}
     </div>
   </td>
@@ -115,17 +105,17 @@
       <Icon icon="mdi:dots-vertical" color="grey" width="24" />
     </span>
     <div v-if="isActionsMenuOpen" class="menu" v-on-click-outside="closeActionsMenu">
-      <ul>
-        <li @click="viewKeuring">
-          <Icon icon="mdi:file-search" width="14" />
+      <ul class="acties">
+        <li @click="viewKeuring" class="text-sm">
+          <Icon icon="mdi:file-search" width="18" />
           Bekijken
         </li>
-        <li @click="editKeuring">
-          <Icon icon="mdi:pencil" width="14" />
+        <li @click="editKeuring" class="text-sm">
+          <Icon icon="mdi:pencil" width="18" />
           Aanpassen
         </li>
-        <li @click="handleDeleteKeuring">
-          <Icon icon="mdi:delete" width="14" />
+        <li @click="handleDeleteKeuring" class="text-sm">
+          <Icon icon="mdi:delete" width="18" />
           Verwijderen
         </li>
       </ul>
@@ -142,11 +132,6 @@
   .naam,
   .straatnaam-nummer {
     font-weight: bold;
-  }
-
-  .emailadres,
-  .gemeente {
-    font-size: 1.1rem;
   }
 
   .actions {
@@ -168,6 +153,8 @@
     }
 
     ul {
+      margin: 0;
+      padding: 0;
       list-style: none;
       display: flex;
       flex-direction: column;
@@ -177,7 +164,6 @@
         align-items: center;
         gap: 1em;
         padding: 1em;
-        font-size: 1em;
         background-color: #fff;
         cursor: pointer;
 
@@ -191,8 +177,9 @@
 
   .status {
     width: fit-content;
-    padding: 1em 1.5em;
-    border-radius: 45px;
+    padding: 0.75rem 1rem;
+    border-radius: 50px;
     color: #fff;
+    line-height: 1rem;
   }
 </style>

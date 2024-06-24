@@ -15,7 +15,6 @@
   import type { Keuring } from '@/types'
   import { formatFileSize } from '@/utils/formatting'
   import { Icon } from '@iconify/vue'
-  import Badge from 'primevue/badge'
   import TabPanel from 'primevue/tabpanel'
   import TabView from 'primevue/tabview'
   import { computed, onMounted, ref } from 'vue'
@@ -204,43 +203,43 @@
 </script>
 
 <template>
-  <div class="container keuring" v-if="keuring">
+  <div class="keuring" v-if="keuring">
     <div class="title">
       <WEVBackButton @click="handleClickGoBackButton" />
-      <h1 v-if="kAddress && vlaamseStad">
-        {{ `${keuring.type ?? ''} Keuring - ${kAddress.straatnaam} ${kAddress.nummer}, ${vlaamseStad.postcode} ${vlaamseStad.gemeente}` }}
+      <h1 class="text-2xl" v-if="kAddress && vlaamseStad">
+        {{ `${keuring.type ?? ''} Keuring - ${kAddress.straatnaam} ${kAddress.nummer} ${kAddress.busnummer ? ' ' + kAddress.busnummer : ''}, ${vlaamseStad.postcode} ${vlaamseStad.gemeente}` }}
       </h1>
       <h1 v-else>loading keuring...</h1>
     </div>
     <div class="badges">
       <div class="info">
-        <span :title="`aangemaakt door ${keuring.created_by.organisatie.naam}`" class="created-by">
+        <span :title="`aangemaakt door ${keuring.created_by.organisatie.naam}`" class="badge created-by text-xs">
           {{ keuring.created_by.organisatie.naam }}
         </span>
-        <span :title="`EPC -> ${epcToegewezenAan}`" class="toegewezen-aan" v-if="epcToegewezenAan">
+        <span :title="`EPC -> ${epcToegewezenAan}`" class="badge toegewezen-aan text-xs" v-if="epcToegewezenAan">
           <span class="meta-badge">EPC</span>
           {{ epcToegewezenAan }}
         </span>
-        <span :title="`Asbest -> ${asbestToegewezenAan}`" class="toegewezen-aan" v-if="asbestToegewezenAan">
+        <span :title="`Asbest -> ${asbestToegewezenAan}`" class="badge toegewezen-aan text-xs" v-if="asbestToegewezenAan">
           <span class="meta-badge">Asbest</span>
           {{ asbestToegewezenAan }}
         </span>
-        <span :title="keuring.toegang_eenheid" class="toegang-eenheid">
+        <span :title="keuring.toegang_eenheid" class="badge toegang-eenheid text-xs">
           <Icon :icon="keuring.toegang_eenheid === ToegangEenheid.KLANT ? 'mdi:handshake-outline' : 'mdi:key'" width="20" color="#fff" />
         </span>
-        <span title="status" :style="{ backgroundColor: `${getStatusColor(keuring.status)}` }">
+        <span title="status" class="badge text-xs" :style="{ backgroundColor: `${getStatusColor(keuring.status)}` }">
           {{ keuring.status }}
         </span>
-        <span v-if="keuring.datum_plaatsbezoek" title="datum plaatsbezoek" class="datum-plaatsbezoek">
+        <span v-if="keuring.datum_plaatsbezoek" title="datum plaatsbezoek" class="badge datum-plaatsbezoek text-sm">
           <Icon icon="mdi:calendar-check" width="20" />
           {{ formattedDateTime }}
         </span>
       </div>
       <div class="actions" v-if="keuring.id">
-        <span title="wijzig keuring" @click="editKeuring(keuring.id)">
+        <span title="wijzig keuring" @click="editKeuring(keuring.id)" class="badge">
           <Icon icon="mdi:edit" width="20" color="#000" />
         </span>
-        <span title="verwijder keuring" @click="isDeleteConfirmationOpen = true">
+        <span title="verwijder keuring" @click="isDeleteConfirmationOpen = true" class="badge">
           <Icon icon="mdi:delete" width="20" color="#000" />
         </span>
         <WEVDeleteKeuring :keuring="keuring" :isOpen="isDeleteConfirmationOpen" @cancel-delete-keuring="isDeleteConfirmationOpen = false" />
@@ -249,46 +248,46 @@
     <div class="content">
       <div class="klant-fac" v-if="kClient && kAddress">
         <div class="klant">
-          <h2>Klant</h2>
-          <span>
+          <h2 class="text-lg">Klant</h2>
+          <span class="text-sm">
             <Icon icon="mdi:account" width="20" />
             {{ `${kClient.voornaam} ${kClient.achternaam}` }}
           </span>
-          <span>
+          <span class="text-sm">
             <Icon icon="mdi:at" width="20" />
             {{ kClient.emailadres }}
           </span>
-          <span>
+          <span class="text-sm">
             <Icon icon="mdi:phone" width="20" />
             {{ kClient.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4') }}
           </span>
         </div>
         <div class="fac" v-if="keuring.facturatie_bestemming === FacturatieBestemming.IMMO">
-          <h2>Facturatie</h2>
-          <span>
+          <h2 class="text-lg">Facturatie</h2>
+          <span class="text-sm">
             <Icon icon="mdi:arrow-right" width="16" />
             IMMO
           </span>
         </div>
         <div class="fac" v-if="kFacturatie && facVlaamseStad && vlaamseStad">
-          <h2>Facturatie</h2>
-          <span v-if="!`${kFacturatie.voornaam} ${kFacturatie.voornaam}`.includes(`${kClient.voornaam} ${kClient.achternaam}`)">
+          <h2 class="text-lg">Facturatie</h2>
+          <span class="text-sm" v-if="!`${kFacturatie.voornaam} ${kFacturatie.achternaam}`.includes(`${kClient.voornaam} ${kClient.achternaam}`)">
             <Icon icon="mdi:account" width="20" />
             {{ `${kFacturatie.voornaam} ${kFacturatie.achternaam}` }}
           </span>
-          <span v-if="!kFacturatie.emailadres.includes(kClient.emailadres)">
+          <span class="text-sm" v-if="!kFacturatie.emailadres.includes(kClient.emailadres)">
             <Icon icon="mdi:at" width="20" />
             {{ kFacturatie.emailadres }}
           </span>
-          <span v-if="!kFacturatie.telefoonnummer.includes(kClient.telefoonnummer)">
+          <span class="text-sm" v-if="!kFacturatie.telefoonnummer.includes(kClient.telefoonnummer)">
             <Icon icon="mdi:phone" width="20" />
             {{ kFacturatie.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4') }}
           </span>
-          <span v-if="!`${kFacturatie.straatnaam} ${kFacturatie.nummer}`.includes(`${kAddress.straatnaam} ${kAddress.nummer}`)">
+          <span class="text-sm" v-if="!`${kFacturatie.straatnaam} ${kFacturatie.nummer}`.includes(`${kAddress.straatnaam} ${kAddress.nummer}`)">
             <Icon icon="mdi:home" width="20" />
-            {{ `${kFacturatie.straatnaam} ${kFacturatie.nummer}` }}
+            {{ `${kFacturatie.straatnaam} ${kFacturatie.nummer}${kFacturatie.busnummer ? ' ' + kFacturatie.busnummer : ''}` }}
           </span>
-          <span v-if="!`${facVlaamseStad.postcode} ${facVlaamseStad.gemeente}`.includes(`${vlaamseStad.postcode} ${vlaamseStad.gemeente}`)">
+          <span class="text-sm" v-if="!`${facVlaamseStad.postcode} ${facVlaamseStad.gemeente}`.includes(`${vlaamseStad.postcode} ${vlaamseStad.gemeente}`)">
             <Icon icon="mdi:city" width="20" />
             {{ `${facVlaamseStad.postcode} ${facVlaamseStad.gemeente}` }}
           </span>
@@ -299,54 +298,58 @@
           <template #header>
             <div class="tab-header">
               <Icon icon="mdi:certificate" width="18" />
-              <span class="font-bold white-space-nowrap">Certificaten</span>
-              <Badge :value="certificatenStore.certificaten.length" severity="warning" />
+              <span class="font-bold white-space-nowrap text-sm">
+                Certificaten
+                <span>({{ certificatenStore.certificaten.length }})</span>
+              </span>
             </div>
           </template>
           <div class="certificaten-wrapper">
             <ul class="certificaten" v-if="certificatenStore.certificaten.length > 0">
               <li v-for="certificaat in certificatenStore.certificaten" :key="certificaat.id">
-                <span class="type">
+                <span class="type text-sm">
                   {{ certificaat.type }}
                 </span>
                 |
                 <div>
-                  <span class="naam">
+                  <span class="naam text-sm">
                     {{ certificaat.naam }}
                   </span>
-                  <span class="size"> ({{ formatFileSize(certificaat.size) }}) </span>
+                  <span class="size text-xs"> ({{ formatFileSize(certificaat.size) }}) </span>
                 </div>
                 <span @click="handleCertificaatDownload(certificaat.type, certificaat.naam)">
                   <Icon class="download" icon="mdi:download" width="20" />
                 </span>
               </li>
             </ul>
-            <div v-else>Geen certificaten beschikbaar</div>
+            <div class="text-sm" v-else>Geen certificaten beschikbaar</div>
           </div>
         </TabPanel>
         <TabPanel>
           <template #header>
             <div class="tab-header">
               <Icon icon="mdi:file-document-multiple" width="18" />
-              <span class="font-bold white-space-nowrap">Extra Documenten</span>
-              <Badge :value="extraDocumentenStore.extra_documenten.length" severity="info" />
+              <span class="font-bold white-space-nowrap text-sm">
+                Extra Documenten
+                <span>({{ extraDocumentenStore.extra_documenten.length }})</span>
+              </span>
             </div>
           </template>
           <div class="extra-docs-wrapper">
             <ul class="extra-docs" v-if="extraDocumentenStore.extra_documenten.length > 0">
               <li v-for="extraDoc in extraDocumentenStore.extra_documenten" :key="extraDoc.id">
                 <div>
-                  <span class="naam">
+                  <span class="naam text-sm">
                     {{ extraDoc.naam }}
                   </span>
-                  <span class="size"> ({{ formatFileSize(extraDoc.size) }}) </span>
+                  <span class="size text-xs"> ({{ formatFileSize(extraDoc.size) }}) </span>
                 </div>
                 <span @click="handleExtraDocumentDownload(extraDoc.naam)">
                   <Icon class="download" icon="mdi:download" width="20" />
                 </span>
               </li>
             </ul>
-            <div v-else>Geen extra documenten beschikbaar</div>
+            <div class="text-sm" v-else>Geen extra documenten beschikbaar</div>
           </div>
         </TabPanel>
         <TabPanel v-if="keuring.opmerking">
@@ -367,14 +370,19 @@
 
 <style lang="scss" scoped>
   .keuring {
+    display: flex;
+    flex-direction: column;
     font-family: 'Rubik', sans-serif;
+    max-width: 1350px;
+    margin: auto;
   }
 
   .title {
-    height: 120px;
     display: flex;
     align-items: center;
-    position: relative;
+    width: 100%;
+    margin: auto;
+    padding-block: 2rem;
 
     .back-btn {
       display: flex;
@@ -388,14 +396,21 @@
     }
   }
 
+  .meta-badge {
+    display: flex;
+    background-color: mediumseagreen;
+    position: absolute;
+    top: -12px;
+    left: 8px;
+    padding: 0.1rem 0.3rem;
+    margin: 0;
+    border-radius: 5px;
+  }
+
   .badges {
     display: flex;
     align-items: center;
     justify-content: space-between;
-
-    span {
-      font-size: 1.4rem;
-    }
 
     .info {
       display: flex;
@@ -414,18 +429,6 @@
       .toegewezen-aan {
         position: relative;
         background-color: seagreen;
-
-        .meta-badge {
-          display: flex;
-          font-size: 0.9rem;
-          background-color: mediumseagreen;
-          position: absolute;
-          top: -8px;
-          left: 8px;
-          padding: 0.3rem;
-          margin: 0;
-          height: auto;
-        }
       }
 
       .toegang-eenheid {
@@ -438,11 +441,11 @@
       gap: 5px;
 
       span {
-        background-color: #e2e8f0;
+        background-color: rgb(245, 245, 245);
       }
     }
 
-    span {
+    .badge {
       display: flex;
       justify-content: center;
       align-items: center;
@@ -457,9 +460,9 @@
   .content {
     display: flex;
     gap: 9rem;
-    margin-top: 10px;
+    margin-top: 1rem;
     position: relative;
-    padding: 4.5rem;
+    padding: 3rem 4rem;
     box-shadow:
       0 26px 58px 0 rgba(0, 0, 0, 0.22),
       0 5px 14px 0 rgba(0, 0, 0, 0.18);
@@ -467,7 +470,7 @@
     .klant-fac {
       display: flex;
       flex-direction: column;
-      gap: 5rem;
+      gap: 2rem;
 
       .klant,
       .fac {
@@ -480,7 +483,7 @@
         display: flex;
         align-items: center;
         gap: 1rem;
-        font-size: 1.4rem;
+        line-height: 1rem;
       }
     }
 
@@ -505,6 +508,7 @@
 
         div {
           flex: 1;
+          display: flex;
         }
 
         .type {
@@ -513,10 +517,7 @@
 
         .naam {
           font-weight: bold;
-        }
-
-        .size {
-          font-size: 1rem;
+          flex: 1;
         }
 
         .download {
@@ -528,11 +529,6 @@
 
     .p-component {
       flex: 1;
-      font-size: 1.4rem;
-    }
-
-    .p-badge {
-      font-size: 1rem;
     }
 
     .tab-header {
@@ -566,7 +562,6 @@
       padding: 3rem;
 
       h2 {
-        font-size: 2rem;
         width: 100%;
       }
 
@@ -579,7 +574,6 @@
         padding-left: 1rem;
 
         li {
-          font-size: 1.3rem;
           line-height: 1.6rem;
         }
       }
@@ -594,13 +588,6 @@
           border: none;
           border-radius: 5px;
           cursor: pointer;
-          font-size: 1.4rem;
-        }
-
-        .cancel {
-          background-color: grey;
-          color: #fff;
-          font-family: 'Rubik', sans-serif;
         }
 
         .delete {

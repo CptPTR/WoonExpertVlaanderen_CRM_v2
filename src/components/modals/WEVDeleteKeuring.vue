@@ -8,8 +8,10 @@
   import type { Keuring } from '@/types'
   import { Icon } from '@iconify/vue'
   import axios from 'axios'
+  import Button from 'primevue/button'
   import { computed } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import { formatDate } from '@/utils/formatting'
 
   const emit = defineEmits(['cancel-delete-keuring'])
 
@@ -40,16 +42,9 @@
 
   const formattedDateTime = computed(() => {
     if (keuring && keuring.datum_plaatsbezoek) {
-      return keuring.datum_plaatsbezoek.toLocaleString('nl-BE', {
-        timeZone: 'Europe/Brussels',
-        day: 'numeric',
-        month: '2-digit',
-        year: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      return formatDate(keuring.datum_plaatsbezoek)
     }
-    return ''
+    return null
   })
 
   const handleCancelClick = () => {
@@ -86,42 +81,45 @@
   <Teleport to="body">
     <div v-if="isOpen" class="modal">
       <div class="content">
-        <h2>Bent u zeker dat u deze keuring wilt verwijderen?</h2>
+        <h2 class="text-2xl">Bent u zeker dat u deze keuring wilt verwijderen?</h2>
         <ul v-if="keuring">
-          <li>
+          <li class="text-sm">
+            <Icon icon="mdi:certificate" />
+
             {{ keuring.type.toUpperCase() }}
           </li>
-          <li>
+          <li class="text-sm">
+            <Icon icon="mdi:label" />
             {{ keuring.status }}
           </li>
-          <li v-if="keuring.datum_plaatsbezoek">
+          <li class="text-sm" v-if="keuring.datum_plaatsbezoek">
             <Icon icon="mdi:clock" />
             {{ formattedDateTime }}
           </li>
-          <li v-else>
+          <li class="text-sm" v-else>
             <Icon icon="mdi:clock" />
             Datum plaatsbezoek (nog) niet ingepland
           </li>
-          <li>
+          <li class="text-sm">
             <Icon icon="mdi:home" />
-            {{ `${kAddress.straatnaam} ${kAddress.nummer}, ${vlaamseStad.postcode} ${vlaamseStad.gemeente}` }}
+            {{ `${kAddress.straatnaam} ${kAddress.nummer} ${kAddress.busnummer ? ' ' + kAddress.busnummer : ''}, ${vlaamseStad.postcode} ${vlaamseStad.gemeente}` }}
           </li>
-          <li>
+          <li class="text-sm">
             <Icon icon="mdi:account" />
             {{ `${kClient.voornaam} ${kClient.achternaam}` }}
           </li>
-          <li>
+          <li class="text-sm">
             <Icon icon="mdi:phone" />
             {{ `${kClient.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')}` }}
           </li>
-          <li>
+          <li class="text-sm">
             <Icon icon="mdi:email" />
             {{ `${kClient.emailadres}` }}
           </li>
         </ul>
         <div class="actions">
-          <button class="cancel" title="Annuleer" @click="handleCancelClick">Annuleer</button>
-          <button class="delete" title="Verwijder keuring" @click="deleteKeuring(keuring.id ? keuring.id : (route.params.id as string))">Verwijder keuring</button>
+          <Button class="text-sm" raised severity="contrast" @click="handleCancelClick">Annuleer</Button>
+          <Button class="text-sm" raised severity="danger" @click="deleteKeuring(keuring.id ? keuring.id : (route.params.id as string))">Verwijder keuring</Button>
         </div>
       </div>
     </div>
@@ -155,63 +153,50 @@
     top: 0;
     left: 0;
     font-family: 'Rubik', sans-serif;
+  }
 
-    .content {
+  .content {
+    display: flex;
+    flex-direction: column;
+    width: 450px;
+    gap: 20px;
+    align-items: flex-start;
+    border-radius: 5px;
+    background-color: #fff;
+    padding: 3rem;
+
+    ul {
+      margin-block: 1rem;
+      list-style: none;
       display: flex;
       flex-direction: column;
-      width: 450px;
-      gap: 20px;
-      align-items: flex-start;
-      border-radius: 5px;
-      background-color: #fff;
-      padding: 3rem;
+      gap: 5px;
+      padding-left: 1rem;
 
-      h2 {
-        font-size: 2rem;
-        width: 100%;
+      li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        line-height: 1.6rem;
+      }
+    }
+
+    .actions {
+      align-self: flex-end;
+      display: flex;
+      gap: 7px;
+
+      * {
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
       }
 
-      ul {
-        margin-block: 1rem;
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-        padding-left: 1rem;
-
-        li {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 1.3rem;
-          line-height: 1.6rem;
-        }
-      }
-
-      .actions {
-        align-self: flex-end;
-        display: flex;
-        gap: 7px;
-
-        * {
-          padding: 0.75rem 1rem;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          font-size: 1.4rem;
-        }
-
-        .cancel {
-          background-color: grey;
-          color: #fff;
-          font-family: 'Rubik', sans-serif;
-        }
-
-        .delete {
-          background-color: #dc3545;
-          color: #fff;
-          font-family: 'Rubik', sans-serif;
-        }
+      .delete {
+        background-color: #dc3545;
+        color: #fff;
+        font-family: 'Rubik', sans-serif;
       }
     }
   }

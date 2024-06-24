@@ -17,10 +17,11 @@ export const formatFileSize = (bytes: number) => {
 export const formatDate = (dateToFormat: Date) => {
   const day = String(dateToFormat.getDate()).padStart(2, '0')
   const month = String(dateToFormat.getMonth() + 1).padStart(2, '0')
-  const year = dateToFormat.getFullYear()
-  const hours = String(dateToFormat.getHours()).padStart(2, '0')
+  const year = String(dateToFormat.getFullYear()).slice(-2)
+  let hours = dateToFormat.getHours()
   const minutes = String(dateToFormat.getMinutes()).padStart(2, '0')
-  const amOrPm = hours >= '12' ? 'PM' : 'AM'
+  const amOrPm = hours >= 12 ? 'NM' : 'VM'
 
+  hours = hours % 12 || 12
   return `${day}/${month}/${year} ${hours}:${minutes} ${amOrPm}`
 }

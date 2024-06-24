@@ -15,13 +15,16 @@ export type Klant = {
   achternaam: string
   telefoonnummer: string
   emailadres: string
+  created_by: string
 }
 
 export type Adres = {
   id: string
   straatnaam: string
   nummer: string
+  busnummer: string
   vlaamse_stad_ID: string
+  created_by: string
 }
 
 export type VlaamseStad = {
@@ -80,8 +83,10 @@ export type Facturatie = {
   telefoonnummer: string
   straatnaam: string
   nummer: string
+  busnummer: string
   vlaamse_stad_ID: string
   organisatie?: string | null
+  created_by: string
 }
 
 export type Certificaat = {
@@ -102,19 +107,11 @@ export type ExtraDocument = {
 
 export type FormKeuring = {
   type: TypeKeuring[]
-  voornaam: string
-  familienaam: string
-  emailadres: string
-  telefoonnummer: string
 
   adresID: string
   klantID: string
   facturatieID: string | null
   facturatie_bestemming: FacturatieBestemming
-
-  straatnaam: string
-  nummer: string
-  vlaamse_stad_ID: string
 
   status: Status
   opmerking: string
@@ -124,7 +121,7 @@ export type FormKeuring = {
   epc_certificaten: Certificaat[]
   asbest_certificaten: Certificaat[]
   extra_documenten: ExtraDocument[]
-  created_by: Gebruiker
+  created_by: Gebruiker | null
   event_ID: string | null
   asbest_event_ID: string | null
   epc_toegewezen_aan: string | null

@@ -19,16 +19,15 @@
 
 <template>
   <div class="fac-list-wrapper">
-    <h3>Facturatielijst</h3>
+    <div class="searchbar">
+      <Icon icon="mdi:magnify" width="20" color="lightgrey" class="icon" />
+      <InputText class="text-xs" type="text" v-model="searchFac" id="search_fac" placeholder="Zoek" />
+    </div>
     <ul class="fac-list flex-col">
-      <div class="searchbar">
-        <Icon icon="mdi:magnify" width="16" color="lightgrey" class="icon" />
-        <InputText type="text" v-model="searchFac" id="search_fac" placeholder="Zoek" />
-      </div>
-
       <li v-for="fac in filteredFacturaties" :key="fac.id">
         <div v-if="!fac.organisatie" @click="$emit('selectFacturatie', fac.id)">
-          {{ `${fac.voornaam} ${fac.achternaam} - ${fac.emailadres}` }}
+          <div class="name text-sm">{{ `${fac.voornaam} ${fac.achternaam}` }}</div>
+          <div class="text-xs">{{ fac.emailadres }}</div>
         </div>
       </li>
     </ul>
@@ -36,16 +35,18 @@
 </template>
 
 <style lang="scss" scoped>
+  .fac-list-wrapper {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
   .searchbar {
     display: flex;
     align-items: center;
-    border: 1px solid lightgrey;
     border-radius: 5px;
     transition: outline 0.2s ease;
-
-    &:focus-within {
-      border: 1px solid #000;
-    }
 
     .icon {
       position: absolute;
@@ -54,36 +55,31 @@
 
     input {
       width: 100%;
-      padding: 1rem;
       background-color: #fff;
       border-radius: inherit;
-      outline: none;
-      border: none;
       padding-left: 35px;
       padding-right: 16px;
+      padding-block: 0.5rem;
     }
   }
 
-  .fac-list-wrapper {
-    flex: 1;
-  }
-
   .fac-list {
+    height: 375px;
     display: flex;
     flex-direction: column;
     gap: 7px;
     list-style: none;
     position: relative;
-    margin-top: 2rem;
+    overflow: auto;
   }
 
   li {
-    border: 1px solid #000;
+    background-color: #fff;
+    border: 1px solid rgb(226, 232, 240);
     border-radius: 5px;
 
     > div {
-      padding: 1rem;
-      font-size: 1.1rem;
+      padding: 0.5rem 1rem;
 
       &:hover {
         background-color: seagreen;
@@ -104,5 +100,9 @@
     border-color: seagreen;
     background-color: seagreen;
     color: #fff;
+  }
+
+  .name {
+    font-weight: bold;
   }
 </style>

@@ -7,17 +7,15 @@
 </script>
 
 <template>
-  <header v-if="route.name !== 'login' && route.name !== 'reset-password-request' && route.name !== 'reset-password' && route.name !== '404'">
-    <div class="content container">
-      <nav>
-        <img src="./assets/images/wev_logo.svg" alt="logo" height="58" />
-      </nav>
-      <UserProfile />
-    </div>
+  <header class="main-header" v-if="route.name !== 'login' && route.name !== 'reset-password-request' && route.name !== 'reset-password' && route.name !== '404'">
+    <nav>
+      <img src="./assets/images/wev_logo.svg" alt="logo" height="40" />
+    </nav>
+    <UserProfile />
   </header>
 
   <RouterView />
-  <Toast group="br" position="bottom-right" style="font-weight: bold" />
+  <Toast group="br" position="bottom-right" />
 </template>
 
 <style lang="scss">
@@ -26,93 +24,52 @@
   @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
   @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
 
-  html {
-    font-size: 10px;
+  * {
+    box-sizing: border-box;
   }
 
   body,
-  ul,
   h1,
   h2,
-  h3 {
-    padding: 0;
+  h3,
+  ul {
     margin: 0;
+    padding: 0;
   }
 
-  table {
-    th,
-    td {
-      font-size: 1.3rem;
-    }
+  input[type='radio'] {
+    margin: 0;
+    transform: scale(1.5);
+    accent-color: seagreen;
+    cursor: pointer;
+    margin-left: 0.5rem;
+  }
+
+  input[type='checkbox'] {
+    transform: scale(1.5);
+    accent-color: seagreen;
+    cursor: pointer;
   }
 
   .container {
-    max-width: 1300px;
-    margin: 0 auto;
+    flex: 1;
   }
 
   .hidden {
     display: none;
   }
 
-  header {
+  .main-header {
+    z-index: 11;
     position: sticky;
     top: 0;
-    z-index: 1000;
-    background-color: #fff;
-
-    .content {
-      font-family: 'Rubik', sans-serif;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      height: 100px;
-      padding-block: 2rem;
-    }
-  }
-
-  nav {
     display: flex;
-    align-items: flex-end;
-    gap: 50px;
-
-    ul {
-      display: flex;
-      text-transform: uppercase;
-
-      .current {
-        border-bottom: 3px solid #000;
-      }
-
-      a {
-        text-decoration: none;
-        color: #000;
-        border-bottom: 3px solid #fff;
-        transition: all 0.3s ease;
-        padding-block: 10px;
-
-        &:hover {
-          border-bottom: 3px solid #000;
-        }
-      }
-    }
-  }
-
-  h1 {
-    font-size: 2.4rem;
-  }
-
-  h2 {
-    text-transform: uppercase;
-    font-size: 1.5rem;
-  }
-
-  .column h2 {
-    width: 150px;
-  }
-
-  h3 {
-    font-size: 1.4rem;
+    justify-content: space-between;
+    align-items: center;
+    padding-inline: 3rem;
+    padding-block: 1rem;
+    background-color: rgb(245, 245, 245);
+    height: 70px;
   }
 
   .notificaties-wrapper {
@@ -130,42 +87,56 @@
     }
   }
 
-  .cancel,
-  .confirm {
-    color: #fff;
-    padding: 1rem;
-    font-family: 'Rubik', sans-serif;
-    border: none;
-    border-radius: 5px;
+  .p-dropdown-item > * {
+    font-size: 0.9rem;
+  }
+
+  .text-xs {
+    font-size: 0.75rem; //12px
+    line-height: 1rem; //16px
+  }
+
+  .text-sm {
+    font-size: 0.875rem; //14px
+    line-height: 1.25rem; //20px
+  }
+
+  .text-base {
+    font-size: 1rem; //16px
+    line-height: 1.5rem; //24px
+  }
+
+  .text-lg {
+    font-size: 1.125rem; //18px
+    line-height: 1.75rem; //28px
+  }
+
+  .text-xl {
+    font-size: 1.25rem; //20px
+    line-height: 1.75rem; //28px
+  }
+
+  .text-2xl {
+    font-size: 1.5rem; //24px
+    line-height: 2rem; //32px
+  }
+
+  .text-3xl {
+    font-size: 1.875rem; //30px
+    line-height: 2.25rem; //36px
+  }
+
+  .red {
+    color: crimson;
+  }
+
+  .clickable {
     cursor: pointer;
   }
 
-  .cancel {
-    background-color: tomato;
-  }
-
-  .confirm {
-    background-color: seagreen;
-
-    &:disabled {
-      background-color: lightgray;
-      cursor: auto;
+  input {
+    &:focus {
+      box-shadow: none;
     }
-  }
-
-  .p-dialog-title {
-    font-size: 1.6rem;
-  }
-
-  .p-dialog {
-    font-size: 1.4rem;
-  }
-
-  .dp__main * {
-    font-size: 1.2rem !important;
-  }
-
-  .dp__action_button {
-    font-size: 1.2rem !important;
   }
 </style>

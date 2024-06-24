@@ -17,7 +17,7 @@ import KeuringView from '../views/KeuringView.vue'
 import KeuringenView from '../views/KeuringenView.vue'
 import LoginView from '../views/LoginView.vue'
 
-const checkSession: NavigationGuard = async (to, from, next) => {
+const checkSession: NavigationGuard = async (to, _, next) => {
   const {
     data: { session }
   } = await supabase.auth.getSession()
@@ -101,7 +101,9 @@ const getAdressenData = async () => {
         id: adres.id,
         straatnaam: adres.straatnaam,
         nummer: adres.nummer,
-        vlaamse_stad_ID: adres.vlaamse_stad_ID
+        busnummer: adres.busnummer,
+        vlaamse_stad_ID: adres.vlaamse_stad_ID,
+        created_by: adres.created_by
       })
     })
   }
@@ -120,7 +122,8 @@ const getKlantenData = async () => {
         voornaam: klant.voornaam,
         achternaam: klant.achternaam,
         emailadres: klant.emailadres,
-        telefoonnummer: klant.telefoonnummer
+        telefoonnummer: klant.telefoonnummer,
+        created_by: klant.created_by
       })
     })
   }
@@ -142,8 +145,10 @@ const getFacturatiesData = async () => {
         telefoonnummer: fac.telefoonnummer,
         straatnaam: fac.straatnaam,
         nummer: fac.nummer,
+        busnummer: fac.busnummer,
         vlaamse_stad_ID: fac.vlaamse_stad_ID,
-        organisatie: fac.organisatie
+        organisatie: fac.organisatie,
+        created_by: fac.created_by
       })
     })
   }
@@ -275,7 +280,7 @@ router.beforeEach(async (to) => {
   } = await supabase.auth.getUser()
 
   if (user) {
-    const { data: gebruikerData } = await supabase.from('gebruikers').select('*, organisatie: organisaties(naam)').eq('id', user.id).single()
+    const { data: gebruikerData } = await supabase.from('gebruikers').select(`*, organisatie: organisaties(naam)`).eq('id', user.id).single()
 
     if (gebruikerData) {
       authStore.setCurrentlyLoggedIn({

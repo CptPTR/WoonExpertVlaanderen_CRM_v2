@@ -19,7 +19,6 @@
     "add-to-calendar-button": "^2.6.0",
     "axios": "^1.6.8",
     "gsap": "^3.12.5",
-    "normalize.css": "^8.0.1",
     "pinia": "^2.1.7",
     "primeicons": "^6.0.1",
     "primevue": "^3.50.0",

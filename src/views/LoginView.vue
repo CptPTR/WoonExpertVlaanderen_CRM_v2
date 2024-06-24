@@ -36,11 +36,11 @@
   <div class="container login">
     <img src="./../assets/images/wev_logo.svg" alt="WoonExpertVlaanderen logo" height="100" />
     <form @submit="handleSignIn">
-      <div class="input-email">
+      <div class="input-email text-sm">
         <label for="e-mail">E-mail</label>
         <input type="email" name="e-mail" id="e-mail" v-model="email" />
       </div>
-      <div class="input-password">
+      <div class="input-password text-sm">
         <label for="password">Wachtwoord</label>
         <input :type="showPassword ? 'text' : 'password'" name="password" id="password" v-model="password" />
         <span class="show-password" @click="showPassword = !showPassword">
@@ -49,9 +49,9 @@
       </div>
       <small class="error">{{ passwordErrorMessage }}</small>
 
-      <button type="submit">Aanmelden</button>
+      <button type="submit" class="text-sm">Aanmelden</button>
     </form>
-    <div class="reset-password">
+    <div class="reset-password text-sm">
       <p>Wachtwoord vergeten?</p>
       <a href="/reset-password-request">Klik hier om het te resetten</a>
     </div>
@@ -77,17 +77,13 @@
       .input-password {
         position: relative;
 
-        label {
-          font-size: 1.4rem;
-        }
-
         input {
           width: 100%;
           height: 40px;
           margin-top: 5px;
           margin-bottom: 20px;
-          padding-inline: 1.4rem;
-          font-size: 1.4rem;
+          padding-left: 1rem;
+          padding-right: 3rem;
           font-family: 'Rubik', sans-serif;
           border: 2px solid rgb(226, 232, 240);
           border-radius: 0.375rem;
@@ -116,13 +112,11 @@
 
       .error {
         color: red;
-        font-size: 1.1rem;
       }
 
       button {
         height: 40px;
         margin-top: 20px;
-        font-size: 1.6rem;
         background-color: green;
         color: #fff;
         border: none;
@@ -136,11 +130,6 @@
       flex-direction: column;
       align-items: center;
       margin-top: 30px;
-
-      p,
-      a {
-        font-size: 1.4rem;
-      }
 
       a {
         text-decoration: none;

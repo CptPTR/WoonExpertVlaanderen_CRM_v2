@@ -11,9 +11,11 @@
 
 <template>
   <div class="container not-found">
-    <h1>404</h1>
-    <p>Oeps, deze pagina bestaat niet!</p>
-    <Button @click="handleClick" size="large"> Terug naar homepagina </Button>
+    <div class="text">
+      <h1 class="text-3xl">404</h1>
+      <p class="text-lg">Oeps, deze pagina bestaat niet!</p>
+    </div>
+    <Button class="text-base" @click="handleClick" size="large">Terug naar homepagina</Button>
   </div>
 </template>
 
@@ -22,16 +24,12 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 5rem;
+    gap: 2rem;
     align-items: center;
     height: 100vh;
 
-    h1 {
-      font-size: 10rem;
-    }
-
-    p {
-      font-size: 2rem;
+    .text {
+      text-align: center;
     }
   }
 </style>

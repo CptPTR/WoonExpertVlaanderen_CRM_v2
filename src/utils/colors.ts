@@ -12,12 +12,3 @@ export const getStatusColor = (status: Status) => {
       return '#008000'
   }
 }
-
-export const getNotificationBgColor = (type: string) => {
-  switch (type) {
-    case 'confirm':
-      return 'seagreen'
-    case 'error':
-      return 'crimson'
-  }
-}

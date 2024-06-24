@@ -6,7 +6,7 @@
   import { computed } from 'vue'
 
   const props = defineProps(['form'])
-  defineEmits(['uploadCertificaten', 'removeCertificaat'])
+  const emits = defineEmits(['uploadCertificaten', 'removeCertificaat', 'toggleSubForm'])
 
   const certificatenStore = useCertificaatStore()
 
@@ -21,43 +21,47 @@
 
 <template>
   <section class="certificaten">
-    <h2>Certificaten</h2>
+    <div class="top-bar">
+      <h2 class="text-lg">Certificaten</h2>
+      <Icon icon="mdi:close" width="22" class="icon" @click="emits('toggleSubForm')" />
+    </div>
     <div class="content">
       <div class="epc" v-if="props.form.type.includes(TypeKeuring.EPC)">
-        <input class="hidden" type="file" name="epc_cert" id="epc_cert" multiple accept="application/pdf" @change="(event: Event) => $emit('uploadCertificaten', event, TypeKeuring.EPC)" />
+        <input class="hidden" type="file" name="epc_cert" id="epc_cert" multiple accept="application/pdf" @change="(event: Event) => emits('uploadCertificaten', event, TypeKeuring.EPC)" />
         <label for="epc_cert">
           <Icon icon="mdi:upload-multiple" width="22" />
-          EPC Certificaat uploaden
+          upload EPC certificaat
         </label>
         <ul v-if="epc_certificaten.length > 0">
           <li v-for="cert in epc_certificaten" :key="cert.id">
             <p>
-              <span class="naam" :title="cert.naam">
+              <span class="naam text-sm" :title="cert.naam">
                 {{ cert.naam }}
               </span>
-              <span class="size">
+              <span class="size text-sm">
                 {{ formatFileSize(cert.size) }}
               </span>
             </p>
-            <button @click="(event: Event) => $emit('removeCertificaat', event, cert.naam, cert.type)">
+            <button @click="(event: Event) => emits('removeCertificaat', event, cert.naam, cert.type)">
               <Icon icon="mdi:delete" width="14" />
             </button>
           </li>
         </ul>
       </div>
+
       <div class="asbest" v-if="props.form.type.includes(TypeKeuring.ASBEST)">
         <input class="hidden" type="file" name="asbest_cert" id="asbest_cert" multiple accept="application/pdf" @change="(event: Event) => $emit('uploadCertificaten', event, TypeKeuring.ASBEST)" />
         <label for="asbest_cert">
           <Icon icon="mdi:upload-multiple" width="22" />
-          Asbest Certificaat uploaden
+          upload Asbest certificaat
         </label>
         <ul v-if="asbest_certificaten.length > 0">
           <li v-for="cert in asbest_certificaten" :key="cert.id">
             <p>
-              <span class="naam" :title="cert.naam">
+              <span class="naam text-sm" :title="cert.naam">
                 {{ cert.naam }}
               </span>
-              <span class="size">
+              <span class="size text-sm">
                 {{ formatFileSize(cert.size) }}
               </span>
             </p>
@@ -73,12 +77,27 @@
 
 <style lang="scss" scoped>
   .certificaten {
-    flex: 1;
-    padding: 4.5rem;
+    position: absolute;
     background-color: #fff;
-    box-shadow:
-      0 0 58px 0 rgba(0, 0, 0, 0.18),
-      0 0 14px 0 rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    padding: 3rem 4rem;
+    max-height: 600px;
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+
+      .icon {
+        border-radius: 15%;
+        cursor: pointer;
+
+        &:hover {
+          background-color: lightgray;
+          color: #fff;
+        }
+      }
+    }
 
     .content {
       display: flex;
@@ -87,11 +106,10 @@
 
       .epc,
       .asbest {
-        flex: 1;
+        width: 500px;
       }
 
       label {
-        flex: 1;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -99,9 +117,9 @@
         gap: 1rem;
         padding-block: 2rem;
         border: 1px dashed #000;
-        background-color: rgb(242, 245, 247);
-        font-size: 1.4rem;
+        background-color: rgb(245, 245, 245);
         cursor: pointer;
+        font-family: 'Rubik', sans-serif;
       }
 
       ul {
@@ -124,12 +142,13 @@
           }
 
           .naam {
-            font-size: 1.4rem;
             font-weight: bold;
+            width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
           .size {
-            font-size: 1.2rem;
             padding-inline: 1rem;
           }
 

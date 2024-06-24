@@ -36,15 +36,17 @@
 
 <template>
   <div class="container reset-password-request">
-    <WEVBackButton v-show="!emailSent" @click="goToLoginView" />
     <form v-if="!emailSent">
-      <h1>Wachtwoord resetten</h1>
+      <div class="title">
+        <WEVBackButton v-show="!emailSent" @click="goToLoginView" />
+        <h1 class="text-2xl">Wachtwoord resetten</h1>
+      </div>
       <InputGroup class="input-wrapper">
         <label for="email">
           Email
           <span class="required">*</span>
         </label>
-        <InputText id="email" variant="filled" v-model="emailToResetPassword" aria-describedby="email-help" />
+        <InputText id="email" variant="filled" v-model="emailToResetPassword" aria-describedby="email-help" autocomplete="email" />
         <small id="email-help">Geef je e-mailadres in om je wachtwoord te resetten.</small>
       </InputGroup>
       <Button type="submit" @click="submit" :disabled="emailToResetPassword.length == 0">Reset wachtwoord</Button>
@@ -66,6 +68,11 @@
     color: red;
   }
 
+  .title {
+    display: flex;
+    align-items: center;
+  }
+
   .email-sent {
     display: flex;
     flex-direction: column;
@@ -75,7 +82,6 @@
     color: #fff;
     background-color: seagreen;
     padding: 2rem;
-    font-size: 1.2rem;
 
     button {
       margin-top: 2rem;
@@ -92,39 +98,29 @@
     gap: 5rem;
     align-items: flex-start;
     max-width: 512px;
+    margin: 0 auto;
     padding-block: 5rem;
 
     .input-wrapper {
       display: flex;
       flex-direction: column;
-      margin-block: 2rem;
-    }
-
-    h1 {
-      margin-bottom: 1rem;
+      margin-top: 5rem;
     }
 
     label {
-      font-size: 1.4rem;
       font-weight: bold;
     }
 
     input {
       margin-block: 0.5rem;
-      font-size: 1.4rem;
       width: 100%;
-    }
-
-    small {
-      font-size: 1rem;
     }
 
     form {
       button {
         padding: 1rem 1.5rem;
         height: 40px;
-        margin-top: 1rem;
-        font-size: 1.6rem;
+        margin-top: 2rem;
         background-color: green;
         color: #fff;
         border: none;

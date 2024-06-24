@@ -3,31 +3,35 @@
   import { formatFileSize } from '@/utils/formatting'
   import { Icon } from '@iconify/vue'
 
-  defineEmits(['uploadExtraDocumenten', 'removeDocument'])
+  defineEmits(['uploadExtraDocumenten', 'removeDocument', 'hideSubForm'])
 
   const extraDocumentenStore = useExtraDocumentStore()
 </script>
 
 <template>
   <section class="extra-documenten">
-    <h2>Extra Documenten</h2>
+    <div class="top-bar">
+      <h2 class="text-lg">Extra Documenten</h2>
+      <Icon icon="mdi:close" width="22" class="icon" @click="$emit('hideSubForm')" />
+    </div>
+
     <div class="content">
       <input class="hidden" type="file" name="extraDocumenten" id="extraDocumenten" multiple @change="(event: Event) => $emit('uploadExtraDocumenten', event)" />
-      <label for="extraDocumenten">
+      <label class="text-sm" for="extraDocumenten">
         <Icon icon="mdi:upload-multiple" width="22" />
-        Extra documenten uploaden
+        upload document
       </label>
       <ul v-if="extraDocumentenStore.extra_documenten.length > 0">
-        <li v-for="(document, index) in extraDocumentenStore.extra_documenten" :key="document.naam">
+        <li v-for="document in extraDocumentenStore.extra_documenten" :key="document.naam">
           <p>
-            <span class="naam" :title="document.naam">
+            <span class="naam text-sm" :title="document.naam">
               {{ document.naam }}
             </span>
-            <span class="size">
+            <span class="size text-sm">
               {{ formatFileSize(document.size) }}
             </span>
           </p>
-          <button @click="(event: Event) => $emit('removeDocument', event, index)">
+          <button @click="(event: Event) => $emit('removeDocument', event, document.naam)">
             <Icon icon="mdi:delete" width="14" />
           </button>
         </li>
@@ -38,12 +42,28 @@
 
 <style lang="scss" scoped>
   .extra-documenten {
-    flex: 1;
-    padding: 4.5rem;
+    position: absolute;
     background-color: #fff;
-    box-shadow:
-      0 0 58px 0 rgba(0, 0, 0, 0.18),
-      0 0 14px 0 rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    padding: 3rem 4rem;
+    max-height: 600px;
+    width: 750px;
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+
+      .icon {
+        border-radius: 15%;
+        cursor: pointer;
+
+        &:hover {
+          background-color: lightgray;
+          color: #fff;
+        }
+      }
+    }
 
     .content {
       display: flex;
@@ -51,7 +71,6 @@
       margin-top: 2rem;
 
       label {
-        flex: 1;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -59,14 +78,16 @@
         gap: 1rem;
         padding-block: 2rem;
         border: 1px dashed #000;
-        background-color: rgb(242, 245, 247);
-        font-size: 1.4rem;
+        background-color: rgb(245, 245, 245);
         cursor: pointer;
+        font-family: 'Rubik', sans-serif;
+        font-size: 1rem;
+        font-weight: normal;
       }
 
       ul {
         list-style: none;
-        max-height: 150px;
+        max-height: 300px;
         overflow-y: auto;
         margin-block: 1rem;
 
@@ -84,12 +105,14 @@
           }
 
           .naam {
-            font-size: 1.4rem;
             font-weight: bold;
+            flex: 1;
+            width: 0px;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
           .size {
-            font-size: 1.2rem;
             padding-inline: 1rem;
           }
 

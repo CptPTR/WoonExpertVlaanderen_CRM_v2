@@ -6,12 +6,9 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     }
   },
-  "files": [],
   "references": [
     {
       "path": "./tsconfig.node.json"
@@ -20,9 +17,5 @@
       "path": "./tsconfig.app.json"
     }
   ],
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/types/**/*.ts"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/types/**/*.ts"]
 }

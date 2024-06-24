@@ -102,21 +102,22 @@
 </script>
 
 <template>
-  <div class="profile" v-if="authStore.currentlyLoggedIn" @mouseleave="showProfileDropDown = false" @mouseenter="showProfileDropDown = true">
-    <WEVAvatar :profilePicture="profilePictureURL" />
+  <div class="profile" v-if="authStore.currentlyLoggedIn">
     <div class="user">
-      <span class="naam">
-        {{ authStore.currentlyLoggedIn.voornaam + ' ' + authStore.currentlyLoggedIn.achternaam }}
+      <span class="naam text-xs">
+        {{ `${authStore.currentlyLoggedIn.voornaam} ${authStore.currentlyLoggedIn.achternaam}` }}
       </span>
-      <span class="type">
-        {{ authStore.currentlyLoggedIn.specialisatie + ' - ' + authStore.currentlyLoggedIn.rol }}
+      <span class="type text-xs" v-if="authStore.currentlyLoggedIn.specialisatie">
+        {{ `${authStore.currentlyLoggedIn.specialisatie} ${authStore.currentlyLoggedIn.rol}` }}
+      </span>
+      <span class="type text-xs" v-else>
+        {{ authStore.currentlyLoggedIn.organisatie.naam }}
       </span>
     </div>
+    <WEVAvatar :profilePicture="profilePictureURL" @click="showProfileDropDown = !showProfileDropDown" />
     <div class="profile-dropdown" v-if="showProfileDropDown">
-      <div class="profile-content" v-if="authStore.currentlyLoggedIn">
-        <button @click="handleChangeAvatar">Profielfoto wijzigen</button>
-        <button @click="handleLogout">uitloggen</button>
-      </div>
+      <button @click="handleChangeAvatar" class="text-xs">Profielfoto wijzigen</button>
+      <button @click="handleLogout" class="text-xs">uitloggen</button>
     </div>
     <Dialog v-model:visible="changeAvatarDialogVisible" modal :style="{ width: '30rem' }" header="Profielfoto wijzigen">
       <template #default>
@@ -135,10 +136,9 @@
 
 <style lang="scss" scoped>
   .profile {
-    font-size: 10px;
     display: flex;
-    flex-direction: row-reverse;
-    gap: 10px;
+    align-items: center;
+    gap: 1rem;
     position: relative;
     cursor: pointer;
   }
@@ -148,45 +148,31 @@
     flex-direction: column;
     justify-content: center;
     align-items: flex-end;
-    gap: 3px;
 
     .naam {
-      font-size: 1.3em;
-    }
-
-    .type {
-      font-size: 1.1em;
+      text-transform: uppercase;
+      font-weight: 600;
     }
   }
 
   .profile-dropdown {
+    position: absolute;
+    top: 54px;
+    right: 0;
     display: flex;
     flex-direction: column;
-    position: absolute;
-    right: 0;
-    top: 45px;
-    padding-block: 2rem;
-    background-color: rgba(0, 0, 0, 0);
-    border: none;
-
-    .profile-content {
-      background-color: #fff;
-      padding: 0.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      flex: 1;
-      box-shadow:
-        0 26px 58px 0 rgba(0, 0, 0, 0.22),
-        0 5px 14px 0 rgba(0, 0, 0, 0.18);
-    }
+    gap: 0.5rem;
+    background-color: rgb(245, 245, 245);
+    padding: 0.5rem;
 
     button {
+      width: 200px;
       border: none;
       font-family: 'Rubik', sans-serif;
       text-transform: uppercase;
-      padding: 1rem;
+      padding: 0.5rem;
       cursor: pointer;
+      background-color: white;
 
       &:hover {
         background-color: seagreen;
