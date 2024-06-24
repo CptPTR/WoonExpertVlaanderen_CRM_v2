@@ -15,56 +15,43 @@
   import { useAdressenStore } from '@/stores/adressenStore'
   import { useAuthStore } from '@/stores/authStore'
   import { useCertificaatStore } from '@/stores/certificatenStore'
+  import { useDeskundigenStore } from '@/stores/deskundigenStore'
   import { useExtraDocumentStore } from '@/stores/extraDocumentenStore'
-  import { useFacturatiesStore } from '@/stores/facturatiesStore'
   import { useKeuringenStore } from '@/stores/keuringenStore'
   import { useKlantenStore } from '@/stores/klantenStore'
   import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
-  import type { Adres, FormKeuring, Keuring } from '@/types'
-  import { Icon } from '@iconify/vue'
+  import type { Adres, FormKeuring, Gebruiker } from '@/types'
   import VueDatePicker from '@vuepic/vue-datepicker'
   import 'add-to-calendar-button'
   import axios from 'axios'
   import Button from 'primevue/button'
-  import Checkbox from 'primevue/checkbox'
-  import RadioButton from 'primevue/radiobutton'
+  import Dropdown from 'primevue/dropdown'
+  import { Icon } from '@iconify/vue'
+  import InputText from 'primevue/inputtext'
   import Textarea from 'primevue/textarea'
   import { useToast } from 'primevue/usetoast'
-  import { computed, reactive, ref } from 'vue'
+  import { computed, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
+  import SelectedFacturatie from '@/components/SelectedFacturatie.vue'
 
   const authStore = useAuthStore()
   const keuringenStore = useKeuringenStore()
   const certificatenStore = useCertificaatStore()
   const klantenStore = useKlantenStore()
   const adressenStore = useAdressenStore()
-  const facturatiesStore = useFacturatiesStore()
   const extraDocumentenStore = useExtraDocumentStore()
   const vlaamseStedenStore = useVlaamseStedenStore()
+  const deskundigenStore = useDeskundigenStore()
   const router = useRouter()
   const toast = useToast()
 
   const keuringForm: FormKeuring = reactive({
     type: [],
-    voornaam: '',
-    familienaam: '',
-    emailadres: '',
-    telefoonnummer: '',
 
     adresID: '',
     klantID: '',
     facturatieID: null,
-    facturatie_bestemming: FacturatieBestemming.HETZELFDE,
-
-    straatnaam: '',
-    nummer: '',
-    // vlaamse_stad: {
-    //   gemeente: '',
-    //   stad: '',
-    //   provincie: '',
-    //   postcode: ''
-    // },
-    vlaamse_stad_ID: '',
+    facturatie_bestemming: (authStore.currentlyLoggedIn?.rol as string) === 'immo' ? FacturatieBestemming.IMMO : FacturatieBestemming.HETZELFDE,
 
     status: Status.NIEUW,
     opmerking: '',
@@ -75,6 +62,7 @@
     extra_documenten: [],
     created_by: {
       id: authStore.currentlyLoggedIn?.id as string,
+      gebruikersnaam: authStore.currentlyLoggedIn?.gebruikersnaam as string,
       voornaam: authStore.currentlyLoggedIn?.voornaam as string,
       achternaam: authStore.currentlyLoggedIn?.achternaam as string,
       email: authStore.currentlyLoggedIn?.email as string,
@@ -85,13 +73,73 @@
         naam: authStore.currentlyLoggedIn?.organisatie.naam as string
       },
       avatar: authStore.currentlyLoggedIn?.avatar as string
-    }
+    },
+    event_ID: null,
+    asbest_event_ID: null,
+    epc_toegewezen_aan: null,
+    asbest_toegewezen_aan: null
   })
 
-  const certificatesFormVisible = ref<boolean>(false)
-  const extraDocsFormVisible = ref<boolean>(false)
   const isCancelModalOpen = ref<boolean>(false)
   const datum_plaatsbezoek_edited = ref<boolean>(false)
+  const editClientEmailPhoneNumber = ref<boolean>(false)
+
+  const isAddressSubFormVisible = ref<boolean>(false)
+  const isClientSubFormVisible = ref<boolean>(false)
+  const isFacturatieSubFormVisible = ref<boolean>(false)
+  const isCertificatesUploaderVisible = ref<boolean>(false)
+  const isExtraDocsUploaderVisible = ref<boolean>(false)
+
+  const showAddressSubForm = () => {
+    isClientSubFormVisible.value = false
+    isAddressSubFormVisible.value = true
+  }
+
+  const hideAddressSubForm = () => {
+    isAddressSubFormVisible.value = false
+  }
+
+  const showClientSubForm = () => {
+    isAddressSubFormVisible.value = false
+    isClientSubFormVisible.value = true
+  }
+
+  const hideClientSubForm = () => {
+    isClientSubFormVisible.value = false
+  }
+
+  const showFacturatieSubForm = () => {
+    isFacturatieSubFormVisible.value = true
+  }
+
+  const hideFacturatieSubForm = () => {
+    isFacturatieSubFormVisible.value = false
+  }
+
+  watch(
+    () => keuringForm.type,
+    (newType, oldType) => {
+      if (newType.includes(TypeKeuring.EPC)) {
+        const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'dclercqpeter@gmail.com')!
+
+        if (epcDeskundige.id) {
+          keuringForm.epc_toegewezen_aan = epcDeskundige.id
+        }
+      } else {
+        keuringForm.epc_toegewezen_aan = null
+      }
+
+      if (newType.includes(TypeKeuring.ASBEST)) {
+        const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'peter.asbest.wev@gmail.com')!
+
+        if (asbestDeskundige.id) {
+          keuringForm.asbest_toegewezen_aan = asbestDeskundige.id
+        }
+      } else {
+        keuringForm.asbest_toegewezen_aan = null
+      }
+    }
+  )
 
   const keuringAddress = computed(() => {
     return adressenStore.adressen.find((adres: Adres) => adres.id === keuringForm.adresID)
@@ -101,20 +149,9 @@
     return klantenStore.klanten.find((klant) => klant.id === keuringForm.klantID)
   })
 
-  const keuringFacturatie = computed(() => {
-    return facturatiesStore.facturaties.find((facturatie) => facturatie.id === keuringForm.facturatieID)
-  })
-
   const vlaamseStad = computed(() => {
     if (keuringAddress.value) {
       return vlaamseStedenStore.getStadById(keuringAddress.value.vlaamse_stad_ID)
-    }
-    return ''
-  })
-
-  const kAdres = computed(() => {
-    if (keuringAddress.value && vlaamseStad.value) {
-      return `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}, ${vlaamseStad.value.postcode} ${vlaamseStad.value.gemeente}`
     }
     return ''
   })
@@ -127,28 +164,14 @@
     return certificatenStore.certificaten.filter((cert) => cert.type.includes(TypeKeuring.ASBEST))
   })
 
-  // const keuringPlaatsbezoekStartTime = computed(() => {
-  //   if (keuringForm.datum_plaatsbezoek) {
-  //     const hours = keuringForm.datum_plaatsbezoek.getHours()
-  //     const minutes = keuringForm.datum_plaatsbezoek.getMinutes()
+  const dropdownEPCValue = computed(() => {
+    const value = deskundigenStore.deskundigen.filter((d: Gebruiker) => d.id === keuringForm.epc_toegewezen_aan)[0]
+    return `${value.voornaam} ${value.achternaam}`
+  })
 
-  //     // Add leading zero if needed
-  //     const formattedHours: string = (hours < 10 ? '0' : '') + hours
-  //     const formattedMinutes: string = (minutes < 10 ? '0' : '') + minutes
-
-  //     return formattedHours + ':' + formattedMinutes
-  //   }
-  //   return ''
-  // })
-
-  const keuringPlaatsbezoekEndTime = computed(() => {
-    if (keuringForm.datum_plaatsbezoek) {
-      const endTime = keuringForm.datum_plaatsbezoek
-      endTime.setMinutes(keuringForm.datum_plaatsbezoek.getMinutes() + 45)
-
-      return endTime
-    }
-    return ''
+  const dropdownAsbestValue = computed(() => {
+    const value = deskundigenStore.deskundigen.filter((d: Gebruiker) => d.id === keuringForm.asbest_toegewezen_aan)[0]
+    return `${value.voornaam} ${value.achternaam}`
   })
 
   const uploadExtraDocumenten = async (event: Event) => {
@@ -193,7 +216,7 @@
         if (typeKeuring === TypeKeuring.EPC) {
           const { error } = await supabase.storage.from('certificaten').upload(`EPC/${file.name}`, file)
           if (error) {
-            console.log('Could not upload EPC certificate')
+            console.error('Could not upload EPC certificate')
           } else {
             certificatenStore.addCertificaat({
               naam: file.name,
@@ -205,7 +228,7 @@
         } else {
           const { error } = await supabase.storage.from('certificaten').upload(`Asbest/${file.name}`, file)
           if (error) {
-            console.log('Could not upload Asbest certificate')
+            console.error('Could not upload Asbest certificate')
           } else {
             certificatenStore.addCertificaat({
               naam: file.name,
@@ -243,24 +266,33 @@
     }
   }
 
-  const uploadKeuring = async (keuring: Keuring) => {
+  const uploadKeuring = async () => {
     const { data: uploadedKeuring } = await supabase
       .from('keuringen')
       .insert([
         {
-          created_by: keuring.created_by.id,
-          adres_ID: keuring.adresID,
-          klant_ID: keuring.klantID,
-          facturatie_ID: keuring.facturatieID,
-          facturatie_bestemming: keuring.facturatie_bestemming,
-          status: keuring.status,
-          type: keuring.type,
-          opmerking: keuring.opmerking,
-          toegang_eenheid: keuring.toegang_eenheid,
-          datum_plaatsbezoek: keuring.datum_plaatsbezoek
+          created_by: keuringForm.created_by?.id,
+          adres_ID: keuringForm.adresID,
+          klant_ID: keuringForm.klantID,
+          facturatie_ID: keuringForm.facturatieID,
+          facturatie_bestemming: keuringForm.facturatie_bestemming,
+          status: keuringForm.status,
+          type:
+            keuringForm.type.includes(TypeKeuring.EPC) && keuringForm.type.includes(TypeKeuring.ASBEST)
+              ? TypeKeuring.EPC_ASBEST
+              : keuringForm.type.includes(TypeKeuring.EPC)
+                ? TypeKeuring.EPC
+                : TypeKeuring.ASBEST,
+          opmerking: keuringForm.opmerking,
+          toegang_eenheid: keuringForm.toegang_eenheid,
+          datum_plaatsbezoek: keuringForm.datum_plaatsbezoek,
+          event_ID: keuringForm.event_ID,
+          asbest_event_ID: keuringForm.asbest_event_ID,
+          epc_toegewezen_aan: keuringForm.epc_toegewezen_aan,
+          asbest_toegewezen_aan: keuringForm.asbest_toegewezen_aan
         }
       ])
-      .select('*, created_by: gebruikers(*, organisatie: organisaties(*)), klant: klanten(*), adres: adressen(*, vlaamse_stad: vlaamse_steden(*)), facturatie: facturaties(*)')
+      .select('*, created_by: gebruikers!keuringen_created_by_fkey(*, organisatie: organisaties(*))')
       .single()
 
     const { error: errorUploadedEPCCertificaat } = await supabase.from('certificaten').insert(
@@ -294,7 +326,7 @@
         naam: extraDoc.naam,
         size: extraDoc.size,
         type: extraDoc.type,
-        adres_ID: keuring.adresID
+        adres_ID: keuringForm.adresID
       }))
     )
 
@@ -307,33 +339,62 @@
 
       keuringenStore.addKeuring({
         id: uploadedKeuring.id,
-        klant: {
-          id: uploadedKeuring.klant.id,
-          voornaam: uploadedKeuring.klant.voornaam,
-          achternaam: uploadedKeuring.klant.achternaam,
-          emailadres: uploadedKeuring.klant.emailadres,
-          telefoonnummer: uploadedKeuring.klant.telefoonnummer
-        },
-        adres: {
-          id: uploadedKeuring.adres.id,
-          straatnaam: uploadedKeuring.adres.straatnaam,
-          nummer: uploadedKeuring.adres.nummer,
-          vlaamse_stad_ID: uploadedKeuring.adres.vlaamse_stad
-        },
+        klantID: uploadedKeuring.klant_ID,
+        adresID: uploadedKeuring.adres_ID,
         status: uploadedKeuring.status,
         type: uploadedKeuring.type,
         toegang_eenheid: uploadedKeuring.toegang_eenheid,
         datum_toewijzing: new Date(uploadedKeuring.created_at),
-        datum_plaatsbezoek: new Date(uploadedKeuring.datum_plaatsbezoek),
+        datum_plaatsbezoek: uploadedKeuring.datum_plaatsbezoek ? new Date(uploadedKeuring.datum_plaatsbezoek) : null,
         created_by: uploadedKeuring.created_by,
         opmerking: uploadedKeuring.opmerking,
-        facturatie: uploadedKeuring.facturatie
+        facturatieID: uploadedKeuring.facturatie_ID,
+        event_ID: uploadedKeuring.event_ID,
+        asbest_event_ID: uploadedKeuring.asbest_event_ID,
+        epc_toegewezen_aan: uploadedKeuring.epc_toegewezen_aan,
+        asbest_toegewezen_aan: uploadedKeuring.asbest_toegewezen_aan
       })
 
       certificatenStore.empty()
       extraDocumentenStore.empty()
+
+      if (uploadedKeuring.epc_toegewezen_aan) {
+        const epcDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.epc_toegewezen_aan === deskundige.id && deskundige.email !== 'dclercqpeter@gmail.com')!
+        epcDeskundigen.map(async (deskundige) => {
+          await sendMail(
+            deskundige.email,
+            `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
+            uploadedKeuring.type,
+            `http://localhost:5173/keuringen/${uploadedKeuring.id}`
+          )
+        })
+      }
+
+      if (uploadedKeuring.asbest_toegewezen_aan && uploadedKeuring.asbest_toegewezen_aan !== uploadedKeuring.epc_toegewezen_aan) {
+        const asbestDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.asbest_toegewezen_aan === deskundige.id && deskundige.email !== 'dclercqpeter@gmail.com')!
+        asbestDeskundigen.map(async (deskundige) => {
+          await sendMail(
+            deskundige.email,
+            `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
+            uploadedKeuring.type,
+            `http://localhost:5173/keuringen/${uploadedKeuring.id}`
+          )
+        })
+      }
+
+      await sendMail(
+        'dclercqpeter@gmail.com',
+        `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
+        uploadedKeuring.type,
+        `http://localhost:5173/keuringen/${uploadedKeuring.id}`
+      )
+
       router.push('/keuringen')
     }
+  }
+
+  const sendMail = async (to: string, subject: string, type: string, link: string) => {
+    await axios.post('http://localhost:3001/send-mail', { to, subject, type, link })
   }
 
   const handleDate = () => {
@@ -345,69 +406,60 @@
     keuringForm.status = Status.NIEUW
   }
 
-  const addEventToCalendar = (keuring: Keuring) => {
+  const addEventToCalendar = async (keuring: FormKeuring) => {
     if (keuringClient.value) {
       if (keuring.datum_plaatsbezoek && keuringAddress.value && vlaamseStad.value) {
         const endTime = new Date(keuring.datum_plaatsbezoek)
         endTime.setMinutes(keuring.datum_plaatsbezoek.getMinutes() + 45)
 
         const event = {
-          summary: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}, ${vlaamseStad.value.postcode} ${vlaamseStad.value.gemeente}`,
-          location: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}, ${vlaamseStad.value.postcode} ${vlaamseStad.value.gemeente}`,
+          summary: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}${keuringAddress.value.busnummer ? ' ' + keuringAddress.value.busnummer : ''}, ${vlaamseStad.value.postcode} ${
+            vlaamseStad.value.gemeente
+          }`,
+          location: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}${keuringAddress.value.busnummer ? ' ' + keuringAddress.value.busnummer : ''}, ${vlaamseStad.value.postcode} ${
+            vlaamseStad.value.gemeente
+          }`,
           description: `${keuringForm.type.join(' + ')} keuring\n${keuringClient.value.voornaam} ${keuringClient.value.achternaam}\n${keuringClient.value.emailadres}\n${String(
             keuringClient.value.telefoonnummer
           ).replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')}`,
-          start: {
-            dateTime: keuring.datum_plaatsbezoek,
-            timeZone: 'Europe/Brussels'
-          },
-          end: {
-            dateTime: endTime,
-            timeZone: 'Europe/Brussels'
-          }
+          start: keuring.datum_plaatsbezoek,
+          end: endTime
         }
 
-        axios.post('http://localhost:3000/events/epc', event)
-
-        if (keuring.type.includes(TypeKeuring.ASBEST)) {
-          axios.post('http://localhost:3000/events/asbest', event)
+        const eventReceivingDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => deskundige.id === keuringForm.epc_toegewezen_aan || deskundige.id === keuringForm.asbest_toegewezen_aan)
+        for (const deskundige of eventReceivingDeskundigen) {
+          try {
+            const response = await axios.post(`http://localhost:3001/calendars/${deskundige.gebruikersnaam}/events`, {
+              eventSummary: event.summary,
+              eventLocation: event.location,
+              eventDescription: event.description,
+              eventStart: event.start,
+              eventEnd: event.end
+            })
+            if (deskundige.id === keuringForm.epc_toegewezen_aan) {
+              keuringForm.event_ID = response.data
+            }
+            if (deskundige.id === keuringForm.asbest_toegewezen_aan) {
+              keuringForm.asbest_event_ID = response.data
+            }
+          } catch (error) {
+            console.error(error)
+          }
         }
       }
     }
   }
 
-  const submitForm = (event: Event) => {
+  const submitForm = async (event: Event) => {
     event.preventDefault()
 
     if (keuringForm.type.length === 0 || !keuringForm.adresID || !keuringForm.klantID) return
 
-    const keuring: Keuring = {
-      klantID: keuringForm.klantID,
-      adresID: keuringForm.adresID,
-      facturatieID: keuringForm.facturatieID,
-      facturatie_bestemming: keuringForm.facturatie_bestemming,
-      status: keuringForm.status,
-      toegang_eenheid: keuringForm.toegang_eenheid,
-      datum_toewijzing: new Date(Date.now()),
-      datum_plaatsbezoek: keuringForm.datum_plaatsbezoek,
-      opmerking: keuringForm.opmerking,
-      certificaten_epc: keuringForm.epc_certificaten,
-      certificaten_asbest: keuringForm.asbest_certificaten,
-      extra_documenten: keuringForm.extra_documenten,
-      type:
-        keuringForm.type.includes(TypeKeuring.EPC) && keuringForm.type.includes(TypeKeuring.ASBEST)
-          ? TypeKeuring.EPC_ASBEST
-          : keuringForm.type.includes(TypeKeuring.EPC)
-            ? TypeKeuring.EPC
-            : TypeKeuring.ASBEST,
-      created_by: keuringForm.created_by
+    if (datum_plaatsbezoek_edited.value) {
+      await addEventToCalendar(keuringForm)
     }
 
-    console.log('upload keuring: ', keuring)
-    if (datum_plaatsbezoek_edited.value) {
-      addEventToCalendar(keuring)
-    }
-    uploadKeuring(keuring)
+    uploadKeuring()
   }
 
   const handleChangeFacturatieBestemming = (event: any) => {
@@ -415,21 +467,26 @@
 
     if (keuringForm.facturatie_bestemming !== FacturatieBestemming.ANDERS) {
       keuringForm.facturatieID = null
+      hideFacturatieSubForm()
     } else {
       keuringForm.facturatieID = ''
+      showFacturatieSubForm()
     }
   }
 
   const selectAddress = (id: string) => {
     keuringForm.adresID = id
+    isAddressSubFormVisible.value = false
   }
 
   const selectClient = (id: string) => {
     keuringForm.klantID = id
+    isClientSubFormVisible.value = false
   }
 
   const selectFacturatie = (id: string) => {
     keuringForm.facturatieID = id
+    isFacturatieSubFormVisible.value = false
   }
 
   const handleClick = () => {
@@ -439,7 +496,7 @@
   }
 
   const handleConfirm = () => {
-    toast.add({ severity: 'error', detail: 'Keuring geannuleerd!', group: 'br', life: 5000 })
+    toast.add({ severity: 'error', detail: 'Keuring geannuleerd!', group: 'br', life: 500000 })
     router.push('/keuringen')
   }
 
@@ -452,14 +509,41 @@
     keuringForm.adresID = ''
   }
 
-  const handleCertificaatUploadClick = () => {
-    certificatesFormVisible.value = !certificatesFormVisible.value
-    extraDocsFormVisible.value = false
+  const showCertificatenSubForm = () => {
+    isCertificatesUploaderVisible.value = true
+    isExtraDocsUploaderVisible.value = false
   }
 
-  const handleExtraDocumentenUploadClick = () => {
-    extraDocsFormVisible.value = !extraDocsFormVisible.value
-    certificatesFormVisible.value = false
+  const showExtraDocumentenSubForm = () => {
+    isExtraDocsUploaderVisible.value = true
+    isCertificatesUploaderVisible.value = false
+  }
+
+  const handleConfirmEdit = async () => {
+    if (keuringClient.value && keuringClient.value.id) {
+      const { error } = await supabase
+        .from('klanten')
+        .update({
+          emailadres: keuringClient.value.emailadres,
+          telefoonnummer: keuringClient.value.telefoonnummer
+        })
+        .eq('id', keuringClient.value.id)
+
+      if (error) {
+        console.error('Error updating klant: ', error)
+        return
+      }
+      editClientEmailPhoneNumber.value = false
+    }
+  }
+
+  const handleDeselectionFacturatie = () => {
+    keuringForm.facturatie_bestemming = FacturatieBestemming.HETZELFDE
+    hideFacturatieSubForm()
+  }
+
+  const handleCloseFacturatieSubForm = () => {
+    handleDeselectionFacturatie()
   }
 </script>
 
@@ -467,469 +551,574 @@
   <div class="container add-keuring">
     <div class="title">
       <WEVBackButton @click="handleClick" />
-      <h1>Keuring toevoegen</h1>
+      <h1 class="text-2xl">Keuring toevoegen</h1>
     </div>
     <form @submit="submitForm">
-      <div class="keuring">
-        <div class="type">
-          <span class="cb-epc">
-            <Checkbox v-model="keuringForm.type" inputId="tkEpc" :value="TypeKeuring.EPC" />
-            <label for="tkEpc" class="ml-2">{{ TypeKeuring.EPC }}</label>
-          </span>
-          <span class="cb-asbest">
-            <Checkbox v-model="keuringForm.type" inputId="tkAsbest" :value="TypeKeuring.ASBEST" />
-            <label for="tkAsbest" class="ml-2">{{ TypeKeuring.ASBEST }}</label>
-          </span>
-        </div>
-        <div class="toegang-eenheid">
-          <span class="rb-klant">
-            <RadioButton v-model="keuringForm.toegang_eenheid" input-id="teKlant" :value="ToegangEenheid.KLANT" />
-            <label for="teKlant">Afspreken met klant</label>
-          </span>
-          <span class="rb-sleutels">
-            <RadioButton v-model="keuringForm.toegang_eenheid" input-id="teSleutels" :value="ToegangEenheid.SLEUTELS" />
-            <label for="teSleutels">Sleutels ophalen</label>
-          </span>
-        </div>
-        <div v-if="keuringAddress" class="adres-wrapper">
-          <div class="data-row">
-            <div class="adres">
-              {{ kAdres }}
-            </div>
-            <div @click="handleAddressCloseClick">
-              <Icon icon="mdi:close" width="20" />
-            </div>
-          </div>
-        </div>
-        <div v-else class="adres-error">
-          <div class="data-row">
-            <div class="adres">Geen adres geselecteerd</div>
-          </div>
-        </div>
-        <div v-if="keuringClient" class="klant-wrapper">
-          <div class="data-row">
-            <div>
-              <div class="name">
-                {{ `${keuringClient.voornaam} ${keuringClient.achternaam}` }}
-              </div>
-              <div class="email-tel">@{{ `${keuringClient.emailadres} - ${keuringClient.telefoonnummer}` }}</div>
-            </div>
-            <div @click="handleClientCloseClick">
-              <Icon icon="mdi:close" width="20" />
-            </div>
-          </div>
-        </div>
-        <div v-else class="klant-error">
-          <div class="data-row">
-            <div class="name">Geen klant geselecteerd</div>
-          </div>
-        </div>
-        <div class="facturatie-wrapper">
-          <h3>Facturatie</h3>
-          <div style="display: flex; flex-direction: column; gap: 1.5rem">
-            <div class="data-row">
-              <div class="rbs-bestemming">
-                <span class="rb-hetzelfde">
-                  <RadioButton v-model="keuringForm.facturatie_bestemming" inputId="fac_hetzelfde" :value="FacturatieBestemming.HETZELFDE" @change="handleChangeFacturatieBestemming" />
-                  <label for="fac_hetzelfde" class="ml-2">Klant</label>
-                </span>
-                <span class="rb-immo">
-                  <RadioButton v-model="keuringForm.facturatie_bestemming" inputId="fac_immo" :value="FacturatieBestemming.IMMO" @change="handleChangeFacturatieBestemming" />
-                  <label for="fac_immo" class="ml-2">Immo</label>
-                </span>
-                <span class="rb-anders" v-if="keuringClient">
-                  <RadioButton v-model="keuringForm.facturatie_bestemming" inputId="fac_anders" :value="FacturatieBestemming.ANDERS" @change="handleChangeFacturatieBestemming" />
-                  <label for="fac_anders" class="ml-2">Anders</label>
-                </span>
-              </div>
-              <div v-if="keuringForm.facturatie_bestemming !== FacturatieBestemming.HETZELFDE" @click="keuringForm.facturatie_bestemming = FacturatieBestemming.HETZELFDE">
-                <Icon icon="mdi:close" width="20" />
-              </div>
-            </div>
-            <div v-if="keuringForm.facturatie_bestemming === FacturatieBestemming.ANDERS" style="padding-left: 2rem">
-              <div v-if="keuringFacturatie" class="fac_name">
-                {{ `${keuringFacturatie.voornaam} ${keuringFacturatie.achternaam}` }}
-              </div>
-              <div v-if="keuringFacturatie" class="fac_email-tel">
-                {{ `${keuringFacturatie.emailadres} - ${keuringFacturatie.telefoonnummer}` }}
-              </div>
-              <div v-if="keuringFacturatie" class="fac_adres">
-                {{ `${keuringFacturatie.straatnaam} ${keuringFacturatie.nummer}, ${vlaamseStedenStore.getStadById(keuringFacturatie.vlaamse_stad_ID)?.gemeente}` }}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="opmerking">
-          <div>
-            <Textarea id="ta-opmerking" v-model="keuringForm.opmerking" placeholder="Opmerkingen"></Textarea>
-          </div>
-        </div>
-        <div class="datum-plaatsbezoek-wrapper" v-if="keuringForm.type.length && keuringAddress && keuringClient">
-          <h3>Datum Plaatsbezoek</h3>
-          <VueDatePicker
-            uid="wev-add-keuring-datepicker"
-            v-model="keuringForm.datum_plaatsbezoek"
-            :min-date="new Date()"
-            @update:model-value="handleDate"
-            @cleared="handleDateClear"
-            preview-format="dd/MM/yyyy HH:mm"
-            format="dd/MM/yyyy HH:mm"
-            :min-time="{ hours: 7, minutes: 0 }"
-            :max-time="{ hours: 19, minutes: 0 }"
-            locale="nl"
-            cancel-text="Sluiten"
-            select-text="Selecteer"
-          />
-          <!--
-            <add-to-calendar-button
-            v-if="keuringForm.datum_plaatsbezoek"
-            size="1"
-            label="Toevoegen aan agenda"
-            :name="kAdres"
-            :location="kAdres"
-            :description="`${keuringForm.type.join(' + ')} keuring\n${keuringClient.voornaam} ${keuringClient.achternaam}\n${keuringClient.emailadres}\n${keuringClient.telefoonnummer.replace(
-              /(\d{4})(\d{2})(\d{2})(\d{2})/,
-              '$1 $2 $3 $4'
-            )}`"
-            options="Google"
-            buttonsList
-            buttonStyle="round"
-            startDate="2024-03-10"
-            :startTime="keuringPlaatsbezoekStartTime"
-            :endTime="keuringPlaatsbezoekEndTime"
-            timeZone="Europe/Brussels"
-            language="nl"
-          ></add-to-calendar-button>
-          -->
-        </div>
-        <div class="uploader-wrapper">
-          <Button :disabled="!keuringForm.adresID || !keuringForm.klantID" raised severity="warning" @click="handleCertificaatUploadClick">
-            <span class="text">
-              <Icon icon="mdi:certificate" width="20" />
-              Certificaten
+      <div class="content">
+        <div class="column">
+          <div class="type text-sm">
+            <span class="cb-epc">
+              <input type="checkbox" name="typekeuring" id="tk_epc" :value="TypeKeuring.EPC" v-model="keuringForm.type" />
+              <label for="tk_epc">{{ TypeKeuring.EPC }}</label>
+              <Dropdown
+                v-if="keuringForm.epc_toegewezen_aan && authStore.currentlyLoggedIn.organisatie.naam === 'WoonExpertVlaanderen'"
+                v-model="keuringForm.epc_toegewezen_aan"
+                :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.EPC))"
+                optionValue="id"
+              >
+                <template #value="">
+                  <div>
+                    {{ dropdownEPCValue }}
+                  </div>
+                </template>
+                <template #option="slotProps">
+                  <div>
+                    {{ `${slotProps.option.voornaam} ${slotProps.option.achternaam}` }}
+                  </div>
+                </template>
+              </Dropdown>
             </span>
-            <span v-if="keuringForm.type.length">
-              <span class="amount" v-if="keuringForm.type.includes(TypeKeuring.EPC)">
-                {{ epc_certificaten.length }}
+            <span class="cb-asbest">
+              <input type="checkbox" name="typekeuring" id="tk_asbest" :value="TypeKeuring.ASBEST" v-model="keuringForm.type" />
+              <label for="tk_asbest" class="ml-2">{{ TypeKeuring.ASBEST }}</label>
+              <Dropdown
+                v-if="keuringForm.asbest_toegewezen_aan && authStore.currentlyLoggedIn.organisatie.naam === 'WoonExpertVlaanderen'"
+                v-model="keuringForm.asbest_toegewezen_aan"
+                :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.ASBEST))"
+                optionValue="id"
+              >
+                <template #value="">
+                  <div>
+                    {{ dropdownAsbestValue }}
+                  </div>
+                </template>
+                <template #option="slotProps">
+                  <div>
+                    {{ `${slotProps.option.voornaam} ${slotProps.option.achternaam}` }}
+                  </div>
+                </template>
+              </Dropdown>
+            </span>
+          </div>
+          <div class="adres-wrapper text-base">
+            <div v-if="keuringAddress && vlaamseStad" class="data-row">
+              <div class="adres">
+                {{ `${keuringAddress.straatnaam} ${keuringAddress.nummer}${keuringAddress.busnummer ? ' ' + keuringAddress.busnummer : ''}, ${vlaamseStad.postcode} ${vlaamseStad.gemeente}` }}
+              </div>
+              <div class="edit-close">
+                <div @click="handleAddressCloseClick">
+                  <Icon icon="mdi:close" width="20" />
+                </div>
+              </div>
+            </div>
+            <div v-else class="red">
+              <div class="adres">
+                <span>Geen adres geselecteerd</span>
+                <Icon icon="mdi:plus" width="20" @click="showAddressSubForm" />
+              </div>
+            </div>
+          </div>
+          <div class="klant-wrapper text-base">
+            <div v-if="keuringClient" class="data-row">
+              <div class="klant">
+                <div class="name">
+                  {{ `${keuringClient.voornaam} ${keuringClient.achternaam}` }}
+                </div>
+                <div class="email-tel" v-if="editClientEmailPhoneNumber">
+                  <div>
+                    <Icon icon="mdi:envelope-outline" width="20" />
+                    <InputText class="text-sm" type="text" v-model="keuringClient.emailadres" />
+                  </div>
+                  <div>
+                    <Icon icon="mdi:phone-outline" width="20" />
+                    <InputText class="text-sm" type="text" v-model="keuringClient.telefoonnummer" />
+                  </div>
+                </div>
+                <div class="email-tel text-sm" v-else>
+                  <div>
+                    <Icon icon="mdi:envelope-outline" width="20" />
+                    <span>
+                      {{ keuringClient.emailadres }}
+                    </span>
+                  </div>
+                  <div>
+                    <Icon icon="mdi:phone-outline" width="20" />
+                    <span>
+                      {{ keuringClient.telefoonnummer.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4') }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="edit-close">
+                <div @click="handleConfirmEdit" v-if="editClientEmailPhoneNumber">
+                  <Icon icon="mdi:check" width="20" />
+                </div>
+                <div @click="editClientEmailPhoneNumber = true" v-else>
+                  <Icon icon="mdi:pencil" width="20" />
+                </div>
+                <div @click="handleClientCloseClick">
+                  <Icon icon="mdi:close" width="20" />
+                </div>
+              </div>
+            </div>
+            <div v-else class="red">
+              <div class="arrow" v-if="isClientSubFormVisible"></div>
+              <div class="klant">
+                <span>Geen klant geselecteerd</span>
+                <Icon icon="mdi:plus" width="20" @click="showClientSubForm" />
+              </div>
+            </div>
+          </div>
+          <div class="toegang-eenheid text-base">
+            <h3 class="text-base">Toegang tot eenheid</h3>
+            <div class="text-sm">
+              <span class="rb-klant">
+                <input type="radio" name="toegangEenheid" id="te_klant" v-model="keuringForm.toegang_eenheid" :value="ToegangEenheid.KLANT" />
+                <label for="te_klant">Afspreken met klant</label>
               </span>
-              <span class="amount" v-if="keuringForm.type.includes(TypeKeuring.EPC) && keuringForm.type.includes(TypeKeuring.ASBEST)"> | </span>
-              <span class="amount" v-if="keuringForm.type.includes(TypeKeuring.ASBEST)">
-                {{ asbest_certificaten.length }}
+              <span class="rb-sleutels">
+                <input type="radio" name="toegangEenheid" id="te_immo" v-model="keuringForm.toegang_eenheid" :value="ToegangEenheid.SLEUTELS" />
+                <label for="te_immo">Sleutels ophalen</label>
               </span>
-            </span>
-          </Button>
-          <Button :disabled="!keuringForm.adresID || !keuringForm.klantID" raised severity="info" @click="handleExtraDocumentenUploadClick">
-            <span class="text">
-              <Icon icon="mdi:file-document" width="20" />
-              Extra documenten
-            </span>
-            <span class="amount">({{ extraDocumentenStore.extra_documenten.length }})</span>
-          </Button>
+            </div>
+          </div>
+          <div class="datum-plaatsbezoek-wrapper" v-if="keuringForm.type.length && keuringAddress && keuringClient && authStore.currentlyLoggedIn.rol === 'deskundige'">
+            <h3 class="text-base">Datum Plaatsbezoek</h3>
+            <VueDatePicker
+              uid="wev-add-keuring-datepicker"
+              v-model="keuringForm.datum_plaatsbezoek"
+              :min-date="new Date()"
+              @update:model-value="handleDate"
+              @cleared="handleDateClear"
+              preview-format="dd/MM/yyyy HH:mm"
+              format="dd/MM/yyyy HH:mm"
+              :min-time="{ hours: 7, minutes: 0 }"
+              :max-time="{ hours: 19, minutes: 0 }"
+              locale="nl"
+              cancel-text="Sluiten"
+              select-text="Selecteer"
+            />
+          </div>
+        </div>
+        <div class="column">
+          <div class="facturatie-wrapper">
+            <h3 class="text-base">Facturatie</h3>
+            <div style="display: flex; flex-direction: column; gap: 1.5rem">
+              <div class="data-row">
+                <div class="rbs-bestemming text-sm">
+                  <span class="rb-hetzelfde">
+                    <input
+                      v-model="keuringForm.facturatie_bestemming"
+                      type="radio"
+                      name="facturatieBestemming"
+                      id="fac_hetzelfde"
+                      @change="handleChangeFacturatieBestemming"
+                      :value="FacturatieBestemming.HETZELFDE"
+                    />
+                    <label for="fac_hetzelfde">Klant</label>
+                  </span>
+                  <span class="rb-immo">
+                    <input
+                      v-model="keuringForm.facturatie_bestemming"
+                      type="radio"
+                      name="facturatieBestemming"
+                      id="fac_immo"
+                      @change="handleChangeFacturatieBestemming"
+                      :value="FacturatieBestemming.IMMO"
+                    />
+                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn.rol === 'immo'">{{ authStore.currentlyLoggedIn.organisatie.naam }}</label>
+                    <label for="fac_immo" v-else>Immo</label>
+                  </span>
+                  <span class="rb-anders" v-if="keuringClient">
+                    <input
+                      v-model="keuringForm.facturatie_bestemming"
+                      type="radio"
+                      name="facturatieBestemming"
+                      id="fac_anders"
+                      @change="handleChangeFacturatieBestemming"
+                      :value="FacturatieBestemming.ANDERS"
+                    />
+                    <label for="fac_anders">Anders</label>
+                  </span>
+                </div>
+                <div class="edit-close">
+                  <div v-if="keuringForm.facturatie_bestemming !== FacturatieBestemming.HETZELFDE" @click="handleDeselectionFacturatie">
+                    <Icon icon="mdi:close" width="20" />
+                  </div>
+                </div>
+              </div>
+              <SelectedFacturatie :form="keuringForm" />
+            </div>
+          </div>
+          <div class="opmerking">
+            <Textarea class="text-sm" id="ta-opmerking" v-model="keuringForm.opmerking" placeholder="Opmerkingen"></Textarea>
+          </div>
+          <div class="uploader-wrapper">
+            <Button raised @click="showCertificatenSubForm" :disabled="!(keuringForm.adresID && keuringForm.klantID && keuringForm.type.length !== 0)">
+              <span class="text text-xs">
+                <Icon icon="mdi:certificate" width="20" />
+                Certificaten
+              </span>
+              <span v-if="keuringForm.type.length" class="text-xs">
+                <span class="amount" v-if="keuringForm.type.includes(TypeKeuring.EPC)">
+                  {{ epc_certificaten.length }}
+                </span>
+                <span class="amount" v-if="keuringForm.type.includes(TypeKeuring.EPC) && keuringForm.type.includes(TypeKeuring.ASBEST)"> | </span>
+                <span class="amount" v-if="keuringForm.type.includes(TypeKeuring.ASBEST)">
+                  {{ asbest_certificaten.length }}
+                </span>
+              </span>
+            </Button>
+            <Button raised @click="showExtraDocumentenSubForm" :disabled="!(keuringForm.adresID && keuringForm.klantID && keuringForm.type.length !== 0)">
+              <span class="text text-xs">
+                <Icon icon="mdi:file-document" width="20" />
+                Extra documenten
+              </span>
+              <span class="amount text-xs">{{ extraDocumentenStore.extra_documenten.length }}</span>
+            </Button>
+          </div>
         </div>
       </div>
       <div class="actions">
-        <ul>
-          <li title="Keuring uploaden">
-            <button type="submit" style="background-color: seagreen">
-              <Icon icon="mdi:send" width="22" color="white" />
-            </button>
-          </li>
-          <li title="Annuleren" @click="isCancelModalOpen = true">
-            <button type="button" style="background-color: crimson">
-              <Icon icon="mdi:close" width="22" color="white" />
-            </button>
-          </li>
-          <WEVCancelCreationKeuring :isOpen="isCancelModalOpen" @closeWindow="isCancelModalOpen = false" @confirm="handleConfirm" />
-        </ul>
-      </div>
-      <div class="sub-form">
-        <WEVAddressForm v-if="!keuringForm.adresID" :form="keuringForm" @select-address="selectAddress" />
-        <WEVClientForm v-if="keuringForm.adresID && !keuringForm.klantID" :form="keuringForm" @select-client="selectClient" />
-        <WEVFacturatieForm
-          @select-facturatie="selectFacturatie"
-          v-if="keuringForm.facturatie_bestemming === FacturatieBestemming.ANDERS && !keuringForm.facturatieID"
-          :keuringClient="keuringClient"
-          :keuringAddress="keuringAddress"
-          :form="keuringForm"
-          :klanten="klantenStore.klanten"
-          :adressen="adressenStore.adressen"
-        />
-        <WEVExtraDocsForm
-          v-if="extraDocsFormVisible"
-          :form="keuringForm"
-          @uploadExtraDocumenten="(event: Event) => uploadExtraDocumenten(event)"
-          @removeDocument="(event: Event, name: string) => removeDocument(event, name)"
-        />
-        <WEVCertificatesForm
-          v-if="certificatesFormVisible && keuringForm.klantID && keuringForm.adresID"
-          :form="keuringForm"
-          @uploadCertificaten="(event: Event, type: TypeKeuring, keuring: string) => uploadCertificaat(event, type, keuring)"
-          @removeCertificaat="(event: Event, name: string, type: TypeKeuring) => removeCertificaat(event, name, type)"
-        />
+        <Button type="button" raised severity="danger" @click="isCancelModalOpen = true" class="text-xs">Annuleer</Button>
+        <Button type="submit" raised severity="success" class="text-xs">Voeg keuring toe</Button>
+        <WEVCancelCreationKeuring :isOpen="isCancelModalOpen" @closeWindow="isCancelModalOpen = false" @confirm="handleConfirm" />
       </div>
     </form>
+    <div class="sub-form" v-if="isAddressSubFormVisible || isClientSubFormVisible">
+      <WEVAddressForm v-if="isAddressSubFormVisible" @select-address="selectAddress" @close-sub-form="hideAddressSubForm" />
+      <WEVClientForm v-if="isClientSubFormVisible" @select-client="selectClient" @close-sub-form="hideClientSubForm" />
+    </div>
+    <div class="sub-form" v-if="isFacturatieSubFormVisible || isCertificatesUploaderVisible || isExtraDocsUploaderVisible">
+      <WEVFacturatieForm
+        v-if="isFacturatieSubFormVisible"
+        @select-facturatie="selectFacturatie"
+        @close-sub-form="handleCloseFacturatieSubForm"
+        :keuringClient="keuringClient"
+        :keuringAddress="keuringAddress"
+        :form="keuringForm"
+        :klanten="klantenStore.klanten"
+        :adressen="adressenStore.adressen"
+      />
+      <WEVCertificatesForm
+        v-if="isCertificatesUploaderVisible"
+        :form="keuringForm"
+        @toggleSubForm="isCertificatesUploaderVisible = !isCertificatesUploaderVisible"
+        @uploadCertificaten="(event: Event, type: TypeKeuring, keuring: string) => uploadCertificaat(event, type, keuring)"
+        @removeCertificaat="(event: Event, name: string, type: TypeKeuring) => removeCertificaat(event, name, type)"
+      />
+      <WEVExtraDocsForm
+        v-if="isExtraDocsUploaderVisible"
+        :form="keuringForm"
+        @hideSubForm="isExtraDocsUploaderVisible = !isExtraDocsUploaderVisible"
+        @uploadExtraDocumenten="(event: Event) => uploadExtraDocumenten(event)"
+        @removeDocument="(event: Event, name: string) => removeDocument(event, name)"
+      />
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
+  .add-keuring {
+    display: flex;
+    flex-direction: column;
+    font-family: 'Rubik', sans-serif;
+    max-width: 1350px;
+    margin: auto;
+  }
+
   .title {
-    height: 120px;
     display: flex;
     align-items: center;
-    position: relative;
+    width: 100%;
+    margin: auto;
+    padding-block: 2rem;
+  }
 
-    .back-btn {
+  form {
+    display: flex;
+    flex-direction: column;
+
+    .content {
       display: flex;
-      margin-right: 2rem;
-      border-radius: 15px;
+      gap: 3rem;
+    }
+  }
+
+  .column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .sub-form {
+    z-index: 20;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .actions {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    flex: 1;
+
+    button {
+      font-weight: bold;
+    }
+  }
+
+  .edit-close {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+
+    div {
+      display: flex;
+      border-radius: 50%;
       cursor: pointer;
 
       &:hover {
-        background-color: #e2e8f0;
+        color: seagreen;
       }
     }
   }
 
-  .add-keuring {
-    font-family: 'Rubik', sans-serif;
-    margin-bottom: 5rem;
+  .data-row {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
 
-    form {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5em;
+    .klant {
+      flex-direction: column;
     }
 
-    .actions {
-      width: 60px;
-
-      ul {
-        flex: 1;
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5em;
-
-        li {
-          display: flex;
-          align-items: center;
-
-          button {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 34px;
-            height: 34px;
-            border-radius: 15%;
-            border: none;
-            cursor: pointer;
-          }
-        }
-      }
-    }
-
-    .sub-form {
+    .email-tel {
       display: flex;
       flex-direction: column;
-      gap: 3em;
-      flex: 1;
-    }
+      gap: 0.3rem;
+      margin-top: 0.2rem;
+      padding-top: 0.25rem;
+      color: #4b5563;
 
-    .keuring {
-      width: 475px;
-      display: flex;
-      flex-direction: column;
-      padding: 4.5em;
-      box-shadow:
-        0 0 58px 0 rgba(0, 0, 0, 0.18),
-        0 0 14px 0 rgba(0, 0, 0, 0.18);
-      gap: 3em;
-
-      label,
-      textarea,
-      .adres,
-      .name {
-        font-size: 1.4em;
-      }
-
-      .adres,
-      .klant,
-      .name,
-      .fac_name,
-      .fac_adres {
-        font-weight: 600;
-      }
-
-      .fac_adres {
-        margin-top: 0.5em;
-      }
-
-      .email-tel {
-        padding-top: 0.25em;
-      }
-
-      .type {
+      span {
         display: flex;
-        gap: 20px;
-
-        .cb-epc,
-        .cb-asbest {
-          display: flex;
-          align-items: center;
-          accent-color: seagreen;
-
-          label {
-            margin-left: 1em;
-          }
-        }
-      }
-
-      .toegang-eenheid {
-        display: flex;
-        gap: 20px;
-
-        div {
-          display: flex;
-          gap: 1em;
-        }
-
-        .rb-klant,
-        .rb-sleutels {
-          display: flex;
-          align-items: center;
-          accent-color: seagreen;
-
-          label {
-            // font-size: 1.4rem;
-            margin-left: 1em;
-          }
-
-          input {
-            margin: 0;
-          }
-        }
-      }
-
-      .opmerking,
-      .adres-wrapper,
-      .adres-error,
-      .klant-error,
-      .klant-wrapper,
-      .facturatie-wrapper {
-        display: flex;
-        justify-content: space-between;
-        padding-left: 1em;
-      }
-
-      .opmerking,
-      .adres-wrapper,
-      .klant-wrapper,
-      .facturatie-wrapper {
-        border-left: 2px solid seagreen;
-      }
-
-      .adres-error,
-      .klant-error {
-        border-left: 2px solid crimson;
-        color: crimson;
-      }
-
-      .uploader-wrapper {
-        display: flex;
-        gap: 1em;
-
-        button {
-          flex: 1;
-          display: flex;
-          gap: 1em;
-          font-weight: bold;
-          // font-size: 1m;
-          font-size: 1em;
-
-          .text {
-            display: flex;
-            align-items: center;
-            gap: 0.5em;
-            flex: 1;
-          }
-        }
-      }
-
-      .opmerking {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5em;
-
-        textarea {
-          display: block;
-          font-family: 'Rubik', sans-serif;
-          padding: 1em;
-          resize: none;
-          width: 100%;
-          height: 100px;
-        }
-      }
-
-      .facturatie-wrapper {
-        flex-direction: column;
-        gap: 1.5em;
-
-        > div {
-          padding-left: 0.5em;
-        }
-
-        .rbs-bestemming {
-          display: flex;
-          flex-direction: row;
-          gap: 20px;
-
-          .rb-hetzelfde,
-          .rb-immo,
-          .rb-anders {
-            display: flex;
-            accent-color: seagreen;
-
-            label {
-              display: flex;
-              align-items: center;
-              margin-left: 1em;
-            }
-          }
-        }
-      }
-
-      .datum-plaatsbezoek-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5em;
-      }
-
-      .data-row {
-        flex: 1;
-        display: flex;
-        justify-content: space-between;
         align-items: center;
+      }
+    }
+  }
 
-        div {
+  .type {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .cb-epc,
+    .cb-asbest {
+      display: flex;
+      align-items: center;
+      height: 40px;
+
+      label {
+        width: 80px;
+        margin-left: 1rem;
+      }
+    }
+  }
+
+  .toegewezen-aan {
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+  }
+
+  .toegang-eenheid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    div {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .rb-klant,
+    .rb-sleutels {
+      display: flex;
+      align-items: center;
+      accent-color: seagreen;
+
+      label {
+        margin-left: 1em;
+      }
+
+      input {
+        margin-left: 0.5rem;
+      }
+    }
+  }
+
+  .red .adres,
+  .red .klant {
+    align-items: center;
+    border-left: 2px solid crimson;
+  }
+
+  .adres,
+  .klant {
+    display: flex;
+    border-left: 2px solid seagreen;
+
+    svg {
+      margin-left: 1rem;
+      cursor: pointer;
+    }
+  }
+
+  .email-tel {
+    div {
+      display: flex;
+      gap: 0.5rem;
+      width: 300px;
+      height: 24px;
+      border: 1px solid transparent;
+    }
+
+    input {
+      flex: 1;
+      height: 24px;
+      padding: 0.5rem;
+      font-family: 'Rubik', sans-serif;
+    }
+
+    span {
+      padding-inline: 0.5rem;
+    }
+  }
+
+  .toegewezen-aan,
+  .adres,
+  .klant,
+  .name,
+  .fac_name,
+  .fac_adres {
+    font-weight: 600;
+  }
+
+  .toegewezen-aan-wrapper,
+  .toegang-eenheid,
+  .opmerking,
+  .adres,
+  .adres-error,
+  .klant,
+  .klant-error,
+  .facturatie-wrapper,
+  .datum-plaatsbezoek-wrapper {
+    display: flex;
+    padding-left: 1.5rem;
+  }
+
+  .toegewezen-aan-wrapper,
+  .toegang-eenheid,
+  .opmerking,
+  .facturatie-wrapper,
+  .datum-plaatsbezoek-wrapper {
+    border-left: 2px solid seagreen;
+  }
+
+  .facturatie-wrapper {
+    flex-direction: column;
+    gap: 1rem;
+
+    .rbs-bestemming {
+      height: 30px;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+
+      .rb-hetzelfde,
+      .rb-immo,
+      .rb-anders {
+        display: flex;
+        accent-color: seagreen;
+
+        label {
           display: flex;
-          flex-direction: column;
+          align-items: center;
+          margin-left: 1em;
         }
       }
     }
+  }
 
-    .datum-plaatsbezoek {
+  .fac_adres {
+    margin-top: 0.5em;
+  }
+
+  .opmerking {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5em;
+
+    textarea {
+      display: block;
+      font-family: 'Rubik', sans-serif;
+      padding: 1em;
+      resize: none;
+      width: 100%;
+    }
+  }
+
+  .uploader-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+
+    button {
+      flex: 1;
       display: flex;
-      gap: 20px;
+      gap: 1rem;
+      font-weight: bold;
+      background-color: seagreen;
+      border-color: seagreen;
 
-      > div {
+      .text {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         flex: 1;
-        border-left: solid 1px #0000006c;
-        padding-left: 20px;
       }
     }
+  }
 
-    :deep(.p-dropdown-panel .p-dropdown-items .p-dropdown-item) {
-      padding: 0.75em 1.25em;
+  .datum-plaatsbezoek-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 50%;
+  }
+
+  :deep(.p-dropdown-label) {
+    line-height: 1rem; //16px
+    font-size: 0.875rem; //14px
+    padding-block: 0.5rem;
+    width: 200px;
+  }
+
+  @media screen and (max-width: 1550px) {
+    form {
+      padding-top: 0;
     }
   }
 </style>

@@ -9,6 +9,11 @@ export const useFacturatiesStore = defineStore('facturaties', () => {
     facturaties.value.push(fac)
   }
 
+  const editFacturatie = (index: string, facturatie: Facturatie) => {
+    removeFacturatie(index)
+    addFacturatie(facturatie)
+  }
+
   const removeFacturatie = (id: string) => {
     facturaties.value = facturaties.value.filter((fac) => fac.id !== id)
   }
@@ -24,6 +29,7 @@ export const useFacturatiesStore = defineStore('facturaties', () => {
   return {
     facturaties,
     addFacturatie,
+    editFacturatie,
     removeFacturatie,
     getFacturatie,
     empty

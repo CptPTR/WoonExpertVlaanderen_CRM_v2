@@ -15,14 +15,16 @@ export type Klant = {
   achternaam: string
   telefoonnummer: string
   emailadres: string
+  created_by: string
 }
 
 export type Adres = {
   id: string
   straatnaam: string
   nummer: string
-  //vlaamse_stad: VlaamseStad
+  busnummer: string
   vlaamse_stad_ID: string
+  created_by: string
 }
 
 export type VlaamseStad = {
@@ -35,9 +37,9 @@ export type VlaamseStad = {
 
 export type Keuring = {
   id?: string
-  adresID?: string
-  klantID?: string
-  facturatieID?: string | null
+  adresID: string
+  klantID: string
+  facturatieID: string | null
   facturatie_bestemming?: FacturatieBestemming
   status: Status
   toegang_eenheid: ToegangEenheid
@@ -49,16 +51,15 @@ export type Keuring = {
   certificaten_asbest?: Certificaat[]
   extra_documenten?: ExtraDocument[]
   opmerking: string
-}
-
-export type KeuringData = Keuring & {
-  adres: Adres
-  klant: Klant
-  facturatie: Facturatie | null
+  event_ID: string | null
+  asbest_event_ID: string | null
+  epc_toegewezen_aan: string | null
+  asbest_toegewezen_aan: string | null
 }
 
 export type Gebruiker = {
   id?: string
+  gebruikersnaam: string
   voornaam: string
   achternaam: string
   email: string
@@ -82,9 +83,10 @@ export type Facturatie = {
   telefoonnummer: string
   straatnaam: string
   nummer: string
-  // vlaamse_stad: VlaamseStad | string
+  busnummer: string
   vlaamse_stad_ID: string
   organisatie?: string | null
+  created_by: string
 }
 
 export type Certificaat = {
@@ -105,20 +107,11 @@ export type ExtraDocument = {
 
 export type FormKeuring = {
   type: TypeKeuring[]
-  voornaam: string
-  familienaam: string
-  emailadres: string
-  telefoonnummer: string
 
   adresID: string
   klantID: string
   facturatieID: string | null
   facturatie_bestemming: FacturatieBestemming
-
-  straatnaam: string
-  nummer: string
-  // vlaamse_stad: VlaamseStad
-  vlaamse_stad_ID: string
 
   status: Status
   opmerking: string
@@ -128,6 +121,9 @@ export type FormKeuring = {
   epc_certificaten: Certificaat[]
   asbest_certificaten: Certificaat[]
   extra_documenten: ExtraDocument[]
-  created_by: Gebruiker
-  // facturatie: Facturatie
+  created_by: Gebruiker | null
+  event_ID: string | null
+  asbest_event_ID: string | null
+  epc_toegewezen_aan: string | null
+  asbest_toegewezen_aan: string | null
 }

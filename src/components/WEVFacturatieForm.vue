@@ -2,16 +2,21 @@
   import FacturatieList from '@/components/FacturatieList.vue'
   import { supabase } from '@/config/supabase'
   import { FacturatieBestemming } from '@/enums/modules/FacturatieBestemming'
+  import { useAuthStore } from '@/stores/authStore'
   import { useFacturatiesStore } from '@/stores/facturatiesStore'
   import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
-  import type { Facturatie, FormKeuring, VlaamseStad } from '@/types'
+  import type { Facturatie, FormKeuring } from '@/types'
+  import { Icon } from '@iconify/vue'
+  import Button from 'primevue/button'
   import Dropdown from 'primevue/dropdown'
+  import FloatLabel from 'primevue/floatlabel'
   import InputText from 'primevue/inputtext'
   import { computed, ref } from 'vue'
 
   const props = defineProps(['form', 'klanten', 'adressen', 'keuringClient', 'keuringAddress'])
-  const emits = defineEmits(['selectFacturatie'])
+  const emits = defineEmits(['selectFacturatie', 'closeSubForm'])
 
+  const authStore = useAuthStore()
   const vlaamseStedenStore = useVlaamseStedenStore()
   const facturatiesStore = useFacturatiesStore()
 
@@ -28,14 +33,12 @@
           fac.telefoonnummer === keuringFacturatie.value.telefoonnummer &&
           fac.straatnaam === keuringFacturatie.value.straatnaam &&
           fac.nummer === keuringFacturatie.value.nummer &&
-          fac.vlaamse_stad_ID === keuringFacturatie.value.vlaamse_stad_ID
+          fac.busnummer === keuringFacturatie.value.busnummer &&
+          fac.vlaamse_stad_ID === keuringFacturatie.value.vlaamse_stad_ID &&
+          fac.created_by === keuringFacturatie.value.created_by
       ).length !== 0
     )
   })
-
-  const selectFacturatie = (id: string) => {
-    form.value.facturatieID = id
-  }
 
   const addFacturatie = async () => {
     const { data: uploadedFacturatie } = await supabase
@@ -48,8 +51,10 @@
           telefoonnummer: keuringFacturatie.value.telefoonnummer,
           straatnaam: keuringFacturatie.value.straatnaam,
           nummer: keuringFacturatie.value.nummer,
+          busnummer: keuringFacturatie.value.busnummer,
           organisatieID: null,
-          vlaamse_stad_ID: keuringFacturatie.value.vlaamse_stad_ID
+          vlaamse_stad_ID: keuringFacturatie.value.vlaamse_stad_ID,
+          created_by: keuringFacturatie.value.created_by
         }
       ])
       .select('*')
@@ -66,15 +71,10 @@
           telefoonnummer: fac.telefoonnummer,
           straatnaam: fac.straatnaam,
           nummer: fac.nummer,
+          busnummer: fac.busnummer,
           organisatie: null,
-          // vlaamse_stad: {
-          //   id: fac.vlaamse_stad.id,
-          //   gemeente: fac.vlaamse_stad.gemeente,
-          //   stad: fac.vlaamse_stad.stad,
-          //   provincie: fac.vlaamse_stad.provincie,
-          //   postcode: fac.vlaamse_stad.postcode
-          // },
-          vlaamse_stad_ID: fac.vlaamse_stad_ID
+          vlaamse_stad_ID: fac.vlaamse_stad_ID,
+          created_by: fac.created_by
         })
       })
     }
@@ -82,43 +82,73 @@
 </script>
 
 <template>
-  <section class="klant">
-    <h2>Facturatie</h2>
-    <div class="facturatie">
-      <div class="content">
-        <div class="form-bestemming">
-          <ul>
-            <li>
-              <InputText type="text" v-model="keuringFacturatie.voornaam" id="fac_voornaam" placeholder="Voornaam" required />
-              <InputText type="text" v-model="keuringFacturatie.achternaam" id="fac_familienaam" placeholder="Familienaam" required />
-            </li>
-            <li>
-              <InputText type="email" v-model="keuringFacturatie.emailadres" id="fac_emailadres" placeholder="Emailadres" required />
-            </li>
-            <li>
-              <InputText type="tel" v-model="keuringFacturatie.telefoonnummer" id="fac_telefoonnummer" pattern="0*([1-9][0-9]*)(?:\s?\d{2}){3}" placeholder="Telefoonnummer" required />
-            </li>
-            <li>
-              <InputText type="text" v-model="keuringFacturatie.straatnaam" id="fac_straatnaam" placeholder="Straat" required />
-              <InputText type="text" v-model="keuringFacturatie.nummer" id="fac_nummer" placeholder="Nr" maxlength="10" required />
-            </li>
-            <li v-if="keuringFacturatie.vlaamse_stad_ID">
-              <Dropdown
-                resetFilterOnHide
-                filter
-                v-model="keuringFacturatie.vlaamse_stad_ID"
-                optionLabel="gemeente"
-                optionValue="id"
-                placeholder="Gemeente"
-                :options="vlaamseStedenStore.vlaamse_steden.map((vlaamse_stad: VlaamseStad) => vlaamse_stad)"
-              />
-            </li>
-          </ul>
+  <section class="facturatie-form-wrapper">
+    <div class="top-bar">
+      <h2 class="text-lg">Facturatie</h2>
+      <Icon icon="mdi:close" width="24" class="close-sub-form" @click="emits('closeSubForm')" />
+    </div>
+    <div class="form">
+      <ul>
+        <li>
+          <FloatLabel>
+            <label class="text-xs" for="fac_voornaam">Voornaam</label>
+            <InputText class="text-xs" type="text" v-model="keuringFacturatie.voornaam" id="fac_voornaam" required />
+          </FloatLabel>
+          <FloatLabel>
+            <label class="text-xs" for="fac_familienaam">Familienaam</label>
+            <InputText class="text-xs" type="text" v-model="keuringFacturatie.achternaam" id="fac_familienaam" required />
+          </FloatLabel>
+        </li>
+        <li>
+          <FloatLabel>
+            <label class="text-xs" for="fac_emailadres">Emailadres</label>
+            <InputText class="text-xs" type="email" v-model="keuringFacturatie.emailadres" id="fac_emailadres" required />
+          </FloatLabel>
+        </li>
+        <li>
+          <FloatLabel>
+            <label class="text-xs" for="fac_telefoonnummer">Telefoonnummer</label>
+            <InputText class="text-xs" type="tel" v-model="keuringFacturatie.telefoonnummer" id="fac_telefoonnummer" pattern="0*([1-9][0-9]*)(?:\s?\d{2}){3}" required />
+          </FloatLabel>
+        </li>
+        <li v-if="keuringFacturatie.vlaamse_stad_ID">
+          <FloatLabel>
+            <label class="text-xs" for="fac_gemeente">Gemeente</label>
+            <Dropdown
+              resetFilterOnHide
+              filter
+              v-model="keuringFacturatie.vlaamse_stad_ID"
+              :virtual-scroller-options="{ itemSize: 38 }"
+              :options="vlaamseStedenStore.vlaamse_steden"
+              optionLabel="gemeente"
+              optionValue="id"
+              inputId="fac_gemeente"
+              placeholder="Gemeente"
+            />
+          </FloatLabel>
+        </li>
+        <li>
+          <FloatLabel>
+            <label class="text-xs" for="fac_straatnaam">Straatnaam</label>
+            <InputText class="text-xs" type="text" v-model="keuringFacturatie.straatnaam" id="fac_straatnaam" required />
+          </FloatLabel>
+        </li>
+        <li>
+          <FloatLabel>
+            <label class="text-xs" for="fac_nummer">Nr</label>
+            <InputText class="text-xs" type="text" v-model="keuringFacturatie.nummer" id="fac_nummer" maxlength="10" required />
+          </FloatLabel>
+          <FloatLabel>
+            <label class="text-xs" for="fac_busnummer">Busnr</label>
+            <InputText class="text-xs" type="text" v-model="keuringFacturatie.busnummer" id="fac_busnummer" maxlength="10" required />
+          </FloatLabel>
+        </li>
+        <li>
           <div class="acties" v-if="form.facturatie_bestemming === FacturatieBestemming.ANDERS">
-            <input
+            <Button
               type="button"
-              value="Toevoegen"
-              class="confirm"
+              raised
+              severity="success"
               :disabled="
                 isFacturatieDuplicate ||
                 !keuringFacturatie.voornaam ||
@@ -130,108 +160,89 @@
                 !keuringFacturatie.vlaamse_stad_ID
               "
               @click="addFacturatie"
-            />
+              class="text-sm"
+            >
+              Toevoegen
+            </Button>
           </div>
-        </div>
-        <!-- @selectFacturatie="selectFacturatie" -->
-        <FacturatieList
-          @select-facturatie="(id: string) => selectFacturatie(id)"
-          :selectedFacturatie="form.facturatieID"
-          :keuringFacturatie="keuringFacturatie"
-          :facturaties="facturatiesStore.facturaties.filter((fac: Facturatie) => !fac.organisatie)"
-        />
-      </div>
+        </li>
+      </ul>
+      <FacturatieList
+        @select-facturatie="(id: string) => emits('selectFacturatie', id)"
+        :selectedFacturatie="form.facturatieID"
+        :keuringFacturatie="keuringFacturatie"
+        :facturaties="facturatiesStore.facturaties.filter((fac: Facturatie) => !fac.organisatie && fac.created_by === authStore.currentlyLoggedIn?.id)"
+      />
     </div>
   </section>
 </template>
 
 <style lang="scss" scoped>
-  .klant {
-    flex: 1;
-    padding: 4.5rem;
-    background-color: #fff;
-    box-shadow:
-      0 0 58px 0 rgba(0, 0, 0, 0.18),
-      0 0 14px 0 rgba(0, 0, 0, 0.18);
+  .facturatie-form-wrapper {
+    position: absolute;
+    background-color: rgb(245, 245, 245);
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 3rem 4rem;
+    max-height: 700px;
+  }
+
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  h2 {
+    width: fit-content;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.5rem;
+  }
+
+  label {
+    color: grey;
+    font-weight: 550;
+  }
+
+  .close-sub-form {
+    cursor: pointer;
+  }
+
+  .form {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
   }
 
   ul {
+    flex: 3;
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 2rem;
 
     li {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 1rem;
 
       .p-dropdown {
         flex: 1;
       }
     }
-
-    input {
-      flex: 1;
-      padding: 0.75rem;
-    }
-
-    input[id='fac_nummer'] {
-      flex: 0;
-      width: 100px;
-    }
   }
 
-  .facturatie {
+  :deep(.p-dropdown) {
+    width: 100%;
+  }
+
+  :deep(.p-float-label) {
     display: flex;
-    gap: 20px;
-    padding-top: 2.25rem;
-
-    .content {
-      display: flex;
-      gap: 4.5rem;
-      flex: 1;
-    }
-
-    .form-bestemming {
-      display: flex;
-      flex-direction: column;
-
-      gap: 2.5rem;
-    }
-
-    ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-
-      li {
-        display: flex;
-        align-items: center;
-
-        input {
-          padding: 0.75rem;
-
-          border: solid 1px rgb(226, 232, 240);
-        }
-      }
-    }
-
-    input[id='fac_nummer'] {
-      width: 100px;
-    }
+    flex: 1;
   }
-
-  // .gevonden-adressen {
-  //     margin-top: 2rem;
-
-  //     .gevonden-adres {
-  //         width: fit-content;
-  //         padding: 0.5rem 1rem;
-  //         border: 1px solid #000;
-  //         border-radius: 2rem;
-  //         cursor: pointer;
-  //     }
-  // }
 </style>

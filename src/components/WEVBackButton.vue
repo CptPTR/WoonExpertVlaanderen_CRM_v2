@@ -4,7 +4,7 @@
 
 <template>
   <span class="back-btn">
-    <Icon icon="mdi:arrow-left" width="30" />
+    <Icon icon="mdi:arrow-left" width="32" />
   </span>
 </template>
 

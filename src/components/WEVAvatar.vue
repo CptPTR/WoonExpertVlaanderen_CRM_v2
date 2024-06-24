@@ -8,8 +8,8 @@
   <div class="avatar">
     <div>
       <div class="frame">
-        <img v-if="props.profilePicture" :src="props.profilePicture" alt="avatar" height="45" />
-        <img v-else src="/user.png" alt="profile placeholder" height="45" />
+        <img v-if="props.profilePicture" :src="props.profilePicture" alt="avatar" height="40" />
+        <img v-else src="/user.png" alt="profile placeholder" height="40" />
       </div>
     </div>
   </div>
@@ -18,8 +18,8 @@
 <style scoped lang="scss">
   .avatar {
     .frame {
-      width: 45px;
-      height: 45px;
+      width: 40px;
+      height: 40px;
       display: flex;
       justify-content: center;
       align-items: center;

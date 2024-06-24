@@ -1,60 +1,81 @@
 <script lang="ts" setup>
-  defineEmits(['selectKlant'])
+  import { useAuthStore } from '@/stores/authStore'
+  import { useKlantenStore } from '@/stores/klantenStore'
+  import { Klant } from '@/types'
+  import { computed } from 'vue'
 
-  const props = defineProps(['selectedKlant', 'klanten'])
+  const props = defineProps(['formKlant'])
+  const emits = defineEmits(['selectKlant'])
+
+  const klantenStore = useKlantenStore()
+  const authStore = useAuthStore()
+
+  const filteredClients = computed(() => {
+    return klantenStore.klanten.filter(
+      (klant: Klant) =>
+        `${klant.voornaam.toLowerCase()} ${klant.achternaam.toLowerCase()}`.includes(props.formKlant.voornaam.toLowerCase()) &&
+        `${klant.voornaam.toLowerCase()} ${klant.achternaam.toLowerCase()}`.includes(props.formKlant.achternaam.toLowerCase()) &&
+        klant.emailadres.toLowerCase().includes(props.formKlant.emailadres.toLowerCase()) &&
+        klant.telefoonnummer.includes(props.formKlant.telefoonnummer) &&
+        klant.created_by === authStore.currentlyLoggedIn?.id
+    )
+  })
 </script>
 
 <template>
-  <div class="client-list-wrapper">
-    <h3>Klantenlijst</h3>
-    <ul class="client-list flex-col">
-      <li v-for="klant in klanten" :key="klant.id" :class="props.selectedKlant === klant.id ? 'highlight' : ''">
-        <div v-if="klant.id" @click="$emit('selectKlant', klant.id)">
-          {{ `${klant.voornaam} ${klant.achternaam} - ${klant.emailadres}` }}
+  <div class="client-list-wrapper" v-if="klantenStore.klanten.length !== 0">
+    <h3 class="text-base">Gevonden klanten</h3>
+    <ul class="client-list">
+      <li v-for="klant in filteredClients" :key="klant.id">
+        <div v-if="klant.id" @click="emits('selectKlant', klant.id)">
+          <div class="name text-sm">{{ `${klant.voornaam} ${klant.achternaam}` }}</div>
+          <div class="text-xs">{{ klant.emailadres }}</div>
         </div>
       </li>
     </ul>
   </div>
+  <div class="empty" v-else>
+    <h3 class="text-base">Geen klanten gevonden in het systeem</h3>
+  </div>
 </template>
 
 <style lang="scss" scoped>
+  .empty {
+    flex: 3;
+  }
+
   .client-list-wrapper {
-    margin-block: 3rem;
-    flex: 1;
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
 
   .client-list {
+    max-height: 350px;
     display: flex;
     flex-direction: column;
     gap: 7px;
     list-style: none;
     position: relative;
-    margin-top: 2rem;
-    max-height: 336px;
     overflow: auto;
-    padding-right: 1rem;
+    padding-right: 0.5rem;
   }
 
   li {
-    border: 1px solid #000;
+    background-color: #fff;
+    border: 1px solid rgb(226, 232, 240);
     border-radius: 5px;
 
     > div {
-      padding: 1rem;
-      font-size: 1.1rem;
-
-      &:hover {
-        background-color: seagreen;
-        color: #fff;
-      }
+      padding: 0.6rem 1rem;
     }
 
     &:hover {
-      border-color: seagreen;
-    }
-
-    &:hover:not(.highlight) {
       cursor: pointer;
+      background-color: seagreen;
+      border-color: seagreen;
+      color: #fff;
     }
   }
 
@@ -62,5 +83,9 @@
     border-color: seagreen;
     background-color: seagreen;
     color: #fff;
+  }
+
+  .name {
+    font-weight: bold;
   }
 </style>
