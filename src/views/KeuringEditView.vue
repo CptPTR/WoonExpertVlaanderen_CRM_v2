@@ -127,7 +127,7 @@
     () => keuringForm.type,
     (newType, oldType) => {
       if (newType.includes(TypeKeuring.EPC)) {
-        const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'dclercqpeter@gmail.com')!
+        const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === process.env.DEFAULT_EPC)!
 
         if (epcDeskundige.id) {
           keuringForm.epc_toegewezen_aan = epcDeskundige.id
@@ -137,7 +137,7 @@
       }
 
       if (newType.includes(TypeKeuring.ASBEST)) {
-        const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'peter.asbest.wev@gmail.com')!
+        const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === process.env.DEFAULT_ASBEST)!
 
         if (asbestDeskundige.id) {
           keuringForm.asbest_toegewezen_aan = asbestDeskundige.id

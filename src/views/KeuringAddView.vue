@@ -120,7 +120,7 @@
     () => keuringForm.type,
     (newType, oldType) => {
       if (newType.includes(TypeKeuring.EPC)) {
-        const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'dclercqpeter@gmail.com')!
+        const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === process.env.DEFAULT_EPC)!
 
         if (epcDeskundige.id) {
           keuringForm.epc_toegewezen_aan = epcDeskundige.id
@@ -130,7 +130,7 @@
       }
 
       if (newType.includes(TypeKeuring.ASBEST)) {
-        const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'peter.asbest.wev@gmail.com')!
+        const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === process.env.DEFAULT_ASBEST)!
 
         if (asbestDeskundige.id) {
           keuringForm.asbest_toegewezen_aan = asbestDeskundige.id
@@ -359,7 +359,7 @@
       extraDocumentenStore.empty()
 
       if (uploadedKeuring.epc_toegewezen_aan) {
-        const epcDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.epc_toegewezen_aan === deskundige.id && deskundige.email !== 'dclercqpeter@gmail.com')!
+        const epcDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.epc_toegewezen_aan === deskundige.id && deskundige.email !== process.env.ADMIN_MAIL)!
         epcDeskundigen.map(async (deskundige) => {
           await sendMail(
             deskundige.email,
@@ -371,7 +371,7 @@
       }
 
       if (uploadedKeuring.asbest_toegewezen_aan && uploadedKeuring.asbest_toegewezen_aan !== uploadedKeuring.epc_toegewezen_aan) {
-        const asbestDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.asbest_toegewezen_aan === deskundige.id && deskundige.email !== 'dclercqpeter@gmail.com')!
+        const asbestDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.asbest_toegewezen_aan === deskundige.id && deskundige.email !== process.env.ADMIN_MAIL)!
         asbestDeskundigen.map(async (deskundige) => {
           await sendMail(
             deskundige.email,
@@ -383,7 +383,7 @@
       }
 
       await sendMail(
-        'dclercqpeter@gmail.com',
+        `${process.env.ADMIN_MAIL}`,
         `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
         uploadedKeuring.type,
         `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
