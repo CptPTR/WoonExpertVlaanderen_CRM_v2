@@ -394,18 +394,16 @@
     }
   }
 
-  const removeDocument = async (event: Event, index: number) => {
+  const removeDocument = async (event: Event, name: string) => {
     event.preventDefault()
 
-    const extraDocument = extraDocumentenStore.extra_documenten[index].naam
-
-    const { error } = await supabase.storage.from('extra-documenten').remove([`${extraDocumentenStore.extra_documenten[index].naam}`])
+    const { error } = await supabase.storage.from('extra-documenten').remove([`${name}`])
     if (error) {
-      console.error(`Unable to remove ${extraDocumentenStore.extra_documenten[index].naam} from the storage`)
+      console.error(`Unable to remove ${name} from the storage`)
     } else {
-      const { error } = await supabase.from('extra_documenten').delete().eq('naam', extraDocument)
+      const { error } = await supabase.from('extra_documenten').delete().eq('naam', name)
 
-      if (!error) extraDocumentenStore.removeExtraDocument(extraDocumentenStore.extra_documenten[index].naam)
+      if (!error) extraDocumentenStore.removeExtraDocument(name)
     }
   }
 
@@ -656,7 +654,7 @@
               <input type="checkbox" name="typeKeuring" id="tk_epc" :value="TypeKeuring.EPC" v-model="keuringForm.type" />
               <label for="tk_epc">{{ TypeKeuring.EPC }}</label>
               <Dropdown
-                v-if="keuringForm.epc_toegewezen_aan && authStore.currentlyLoggedIn.organisatie.naam === 'WoonExpertVlaanderen'"
+                v-if="keuringForm.epc_toegewezen_aan && authStore.currentlyLoggedIn?.organisatie.naam === 'WoonExpertVlaanderen'"
                 v-model="keuringForm.epc_toegewezen_aan"
                 :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.EPC))"
                 optionValue="id"
@@ -677,7 +675,7 @@
               <input type="checkbox" name="typeKeuring" id="tk_asbest" :value="TypeKeuring.ASBEST" v-model="keuringForm.type" />
               <label for="tk_asbest">{{ TypeKeuring.ASBEST }}</label>
               <Dropdown
-                v-if="keuringForm.asbest_toegewezen_aan && authStore.currentlyLoggedIn.organisatie.naam === 'WoonExpertVlaanderen'"
+                v-if="keuringForm.asbest_toegewezen_aan && authStore.currentlyLoggedIn?.organisatie.naam === 'WoonExpertVlaanderen'"
                 v-model="keuringForm.asbest_toegewezen_aan"
                 :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.ASBEST))"
                 optionValue="id"
@@ -777,7 +775,7 @@
               </span>
             </div>
           </div>
-          <div class="datum-plaatsbezoek-wrapper" v-if="vlaamseStad && keuringAddress && keuringClient && authStore.currentlyLoggedIn.rol === 'deskundige'">
+          <div class="datum-plaatsbezoek-wrapper" v-if="vlaamseStad && keuringAddress && keuringClient && authStore.currentlyLoggedIn?.rol === 'deskundige'">
             <h3 class="text-base">Datum Plaatsbezoek</h3>
             <VueDatePicker
               uid="wev-edit-keuring-datepicker"
@@ -822,7 +820,7 @@
                       @change="handleChangeFacturatieBestemming"
                       :value="FacturatieBestemming.IMMO"
                     />
-                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn.rol === 'immo'">{{ authStore.currentlyLoggedIn.organisatie.naam }}</label>
+                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn?.rol === 'immo'">{{ authStore.currentlyLoggedIn?.organisatie.naam }}</label>
                     <label for="fac_immo" v-else>Immo</label>
                   </span>
                   <span class="rb-anders" v-if="keuringClient">
@@ -904,7 +902,7 @@
         v-if="isCertificatesUploaderVisible"
         :form="keuringForm"
         @toggleSubForm="isCertificatesUploaderVisible = !isCertificatesUploaderVisible"
-        @uploadCertificaten="(event: Event, type: TypeKeuring, keuring: string) => uploadCertificaat(event, type, keuring)"
+        @uploadCertificaten="(event: Event, type: TypeKeuring) => uploadCertificaat(event, type)"
         @removeCertificaat="(event: Event, name: string, type: TypeKeuring) => removeCertificaat(event, name, type)"
       />
       <WEVExtraDocsForm

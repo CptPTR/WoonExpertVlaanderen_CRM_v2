@@ -176,13 +176,13 @@
 
   const uploadExtraDocumenten = async (event: Event) => {
     const { files } = event.target as HTMLInputElement
-
     if (files) {
       const fileListArray = Array.from(files || [])
+
       for (const file of fileListArray) {
-        const { error } = await supabase.storage.from('extra-documenten').upload(`/${file.name}`, file)
+        const { error } = await supabase.storage.from('extra-documenten').upload(file.name, file)
         if (error) {
-          console.error('Could not upload document')
+          console.error('Could not upload extra document')
         } else {
           extraDocumentenStore.addExtraDocument({
             naam: file.name,
@@ -190,6 +190,17 @@
             type: file.type,
             adresID: keuringForm.adresID
           })
+
+          const { error: errorUploadedExtraDocument } = await supabase.from('extra_documenten').insert([
+            {
+              naam: file.name,
+              size: file.size,
+              type: file.type,
+              adres_ID: keuringForm.adresID
+            }
+          ])
+
+          if (errorUploadedExtraDocument) console.error('Could not insert extra document into DB')
         }
       }
     }
@@ -561,7 +572,7 @@
               <input type="checkbox" name="typekeuring" id="tk_epc" :value="TypeKeuring.EPC" v-model="keuringForm.type" />
               <label for="tk_epc">{{ TypeKeuring.EPC }}</label>
               <Dropdown
-                v-if="keuringForm.epc_toegewezen_aan && authStore.currentlyLoggedIn.organisatie.naam === 'WoonExpertVlaanderen'"
+                v-if="keuringForm.epc_toegewezen_aan && authStore.currentlyLoggedIn?.organisatie.naam === 'WoonExpertVlaanderen'"
                 v-model="keuringForm.epc_toegewezen_aan"
                 :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.EPC))"
                 optionValue="id"
@@ -582,7 +593,7 @@
               <input type="checkbox" name="typekeuring" id="tk_asbest" :value="TypeKeuring.ASBEST" v-model="keuringForm.type" />
               <label for="tk_asbest" class="ml-2">{{ TypeKeuring.ASBEST }}</label>
               <Dropdown
-                v-if="keuringForm.asbest_toegewezen_aan && authStore.currentlyLoggedIn.organisatie.naam === 'WoonExpertVlaanderen'"
+                v-if="keuringForm.asbest_toegewezen_aan && authStore.currentlyLoggedIn?.organisatie.naam === 'WoonExpertVlaanderen'"
                 v-model="keuringForm.asbest_toegewezen_aan"
                 :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.ASBEST))"
                 optionValue="id"
@@ -682,7 +693,7 @@
               </span>
             </div>
           </div>
-          <div class="datum-plaatsbezoek-wrapper" v-if="keuringForm.type.length && keuringAddress && keuringClient && authStore.currentlyLoggedIn.rol === 'deskundige'">
+          <div class="datum-plaatsbezoek-wrapper" v-if="keuringForm.type.length && keuringAddress && keuringClient && authStore.currentlyLoggedIn?.rol === 'deskundige'">
             <h3 class="text-base">Datum Plaatsbezoek</h3>
             <VueDatePicker
               uid="wev-add-keuring-datepicker"
@@ -726,7 +737,7 @@
                       @change="handleChangeFacturatieBestemming"
                       :value="FacturatieBestemming.IMMO"
                     />
-                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn.rol === 'immo'">{{ authStore.currentlyLoggedIn.organisatie.naam }}</label>
+                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn?.rol === 'immo'">{{ authStore?.currentlyLoggedIn.organisatie.naam }}</label>
                     <label for="fac_immo" v-else>Immo</label>
                   </span>
                   <span class="rb-anders" v-if="keuringClient">
