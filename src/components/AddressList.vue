@@ -1,7 +1,7 @@
 <script lang="ts" setup>
   import { useAdressenStore } from '@/stores/adressenStore'
   import { useAuthStore } from '@/stores/authStore'
-  import { Adres } from '@/types'
+  import type { Adres } from '@/types'
   import { computed } from 'vue'
 
   const props = defineProps(['formAdres'])

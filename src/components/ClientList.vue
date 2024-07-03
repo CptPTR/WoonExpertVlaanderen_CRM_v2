@@ -1,7 +1,7 @@
 <script lang="ts" setup>
   import { useAuthStore } from '@/stores/authStore'
   import { useKlantenStore } from '@/stores/klantenStore'
-  import { Klant } from '@/types'
+  import type { Klant } from '@/types'
   import { computed } from 'vue'
 
   const props = defineProps(['formKlant'])
