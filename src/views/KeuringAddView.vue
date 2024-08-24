@@ -424,9 +424,9 @@
         endTime.setMinutes(keuring.datum_plaatsbezoek.getMinutes() + 45)
 
         const event = {
-          summary: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}${keuringAddress.value.busnummer ? ' ' + keuringAddress.value.busnummer : ''}, ${vlaamseStad.value.postcode} ${
-            vlaamseStad.value.gemeente
-          }`,
+          summary: `${keuringForm.type.join(' + ')} - ${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}${keuringAddress.value.busnummer ? ' ' + keuringAddress.value.busnummer : ''}, ${
+            vlaamseStad.value.postcode
+          } ${vlaamseStad.value.gemeente}`,
           location: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}${keuringAddress.value.busnummer ? ' ' + keuringAddress.value.busnummer : ''}, ${vlaamseStad.value.postcode} ${
             vlaamseStad.value.gemeente
           }`,
