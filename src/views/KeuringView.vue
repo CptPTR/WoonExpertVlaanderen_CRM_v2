@@ -173,22 +173,6 @@
     return ''
   })
 
-  const epcToegewezenAan = computed(() => {
-    if (keuring.value && keuring.value.epc_toegewezen_aan) {
-      const deskundige = deskundigenStore.getDeskundige(keuring.value.epc_toegewezen_aan)
-      return `${deskundige.voornaam} ${deskundige.achternaam}`
-    }
-    return null
-  })
-
-  const asbestToegewezenAan = computed(() => {
-    if (keuring.value && keuring.value.asbest_toegewezen_aan) {
-      const deskundige = deskundigenStore.getDeskundige(keuring.value.asbest_toegewezen_aan)
-      return `${deskundige.voornaam} ${deskundige.achternaam}`
-    }
-    return null
-  })
-
   onMounted(async () => {
     keuring.value = keuringenStore.getKeuring(paramId)
 
@@ -215,14 +199,6 @@
       <div class="info">
         <span :title="`aangemaakt door ${keuring.created_by.organisatie.naam}`" class="badge created-by text-xs">
           {{ keuring.created_by.organisatie.naam }}
-        </span>
-        <span :title="`EPC -> ${epcToegewezenAan}`" class="badge toegewezen-aan text-xs" v-if="epcToegewezenAan">
-          <span class="meta-badge">EPC</span>
-          {{ epcToegewezenAan }}
-        </span>
-        <span :title="`Asbest -> ${asbestToegewezenAan}`" class="badge toegewezen-aan text-xs" v-if="asbestToegewezenAan">
-          <span class="meta-badge">Asbest</span>
-          {{ asbestToegewezenAan }}
         </span>
         <span :title="keuring.toegang_eenheid" class="badge toegang-eenheid text-xs">
           <Icon :icon="keuring.toegang_eenheid === ToegangEenheid.KLANT ? 'mdi:handshake-outline' : 'mdi:key'" width="20" color="#fff" />
