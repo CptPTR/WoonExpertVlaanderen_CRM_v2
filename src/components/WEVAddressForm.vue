@@ -33,6 +33,7 @@
     return (
       adressenStore.adressen.filter(
         (adres: Adres) =>
+          adres.created_by === authStore.currentlyLoggedIn?.id &&
           adres.vlaamse_stad_ID === form.value.vlaamse_stad_ID &&
           adres.straatnaam.toLowerCase() === form.value.straatnaam.toLowerCase() &&
           adres.nummer === form.value.nummer &&
