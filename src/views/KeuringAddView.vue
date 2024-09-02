@@ -231,6 +231,7 @@
             console.error('Could not upload EPC certificate')
           } else {
             certificatenStore.addCertificaat({
+              created_at: new Date(Date.now()),
               naam: file.name,
               size: file.size,
               type: TypeKeuring.EPC,
@@ -243,6 +244,7 @@
             console.error('Could not upload Asbest certificate')
           } else {
             certificatenStore.addCertificaat({
+              created_at: new Date(Date.now()),
               naam: file.name,
               size: file.size,
               type: TypeKeuring.ASBEST,

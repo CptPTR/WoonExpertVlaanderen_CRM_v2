@@ -92,6 +92,7 @@ export type Facturatie = {
 
 export type Certificaat = {
   id?: string
+  created_at: Date
   naam: string
   type: string
   size: number

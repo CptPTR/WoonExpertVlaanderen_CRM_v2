@@ -31,7 +31,6 @@
   import { useToast } from 'primevue/usetoast'
   import { computed, onBeforeMount, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import { formatDate } from '@/utils/formatting'
   import SelectedFacturatie from '@/components/SelectedFacturatie.vue'
 
   const authStore = useAuthStore()
@@ -49,6 +48,7 @@
   const loadingKeuring = ref<boolean>(true)
   const editClientEmailPhoneNumber = ref<boolean>(false)
   const datum_plaatsbezoek_edited = ref<boolean>(false)
+  const certificateFilesAdded = ref<number>(0)
   const keuringForm: FormKeuring = reactive({
     type: [],
 
@@ -104,21 +104,21 @@
     isFacturatieSubFormVisible.value = false
   }
 
-  const sendNotifToCreator = async (to: string, subject: string, location: string, klant: string, date: string, type: TypeKeuring[]) => {
-    await axios.post(`${process.env.BACKEND_BASE_URL}/notify-updated-date-visit`, { to, subject, location, klant, date, type })
+  const sendNotifToCreator = async (to: string, subject: string, location: string, klant: string, type: string, link: string) => {
+    await axios.post(`${process.env.BACKEND_BASE_URL}/notify-certificate-available`, { to, subject, location, klant, type, link })
   }
 
-  const notifyKeuringCreatorDateVisitIsPlanned = async () => {
-    if (keuringForm.created_by && keuringClient.value && keuringAddress.value && vlaamseStad.value && keuringForm.datum_plaatsbezoek) {
+  const notifyKeuringCreatorCertificateIsAvailable = async () => {
+    if (keuringForm.created_by && keuringAddress.value && keuringClient.value && vlaamseStad.value) {
       await sendNotifToCreator(
         keuringForm.created_by.email,
-        `Keuring ingepland voor ${keuringForm.datum_plaatsbezoek}`,
+        'Nieuw attest beschikbaar',
         `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}${keuringAddress.value.busnummer ? ` ${keuringAddress.value.busnummer}` : ''}, ${vlaamseStad.value.postcode} ${
           vlaamseStad.value.gemeente
         }`,
         `${keuringClient.value.voornaam} ${keuringClient.value.achternaam}`,
-        formatDate(keuringForm.datum_plaatsbezoek),
-        keuringForm.type
+        keuringForm.type.join(' + '),
+        `${process.env.FRONTEND_BASE_URL}/keuringen/${route.params.id}`
       )
     }
   }
@@ -149,6 +149,9 @@
   )
 
   onBeforeMount(async () => {
+    certificatenStore.empty()
+    extraDocumentenStore.empty()
+
     try {
       const { data } = await supabase.from('keuringen').select('*, created_by: gebruikers!keuringen_created_by_fkey(*, organisatie: organisaties(naam))').eq('id', route.params.id).single()
 
@@ -189,6 +192,7 @@
         certificatenData.map((certificaat) => {
           certificatenStore.addCertificaat({
             id: certificaat.id,
+            created_at: certificaat.created_at,
             naam: certificaat.name,
             type: certificaat.type,
             size: certificaat.size,
@@ -284,6 +288,7 @@
             console.error('Could not upload EPC certificate')
           } else {
             certificatenStore.addCertificaat({
+              created_at: new Date(Date.now()),
               naam: file.name,
               size: file.size,
               type: TypeKeuring.EPC,
@@ -302,6 +307,7 @@
             }
 
             keuringForm.status = Status.CERTIFICAAT_BESCHIKBAAR
+            certificateFilesAdded.value++
           }
         } else {
           const { error } = await supabase.storage.from('certificaten').upload(`Asbest/${file.name}`, file)
@@ -309,6 +315,7 @@
             console.error('Could not upload Asbest certificate')
           } else {
             certificatenStore.addCertificaat({
+              created_at: new Date(Date.now()),
               naam: file.name,
               size: file.size,
               type: TypeKeuring.ASBEST,
@@ -327,16 +334,17 @@
             }
 
             keuringForm.status = Status.CERTIFICAAT_BESCHIKBAAR
+            certificateFilesAdded.value++
           }
         }
       }
     }
   }
 
-  const removeCertificaat = async (event: Event, name: string, typeKeuring: TypeKeuring) => {
+  const removeCertificaat = async (event: Event, id: string, typeKeuring: TypeKeuring) => {
     event.preventDefault()
 
-    const certificaat = certificatenStore.certificaten.find((cert) => cert.naam === name)
+    const certificaat = certificatenStore.certificaten.find((cert) => cert.id === id)
 
     if (certificaat) {
       if (typeKeuring === TypeKeuring.EPC) {
@@ -347,7 +355,7 @@
         } else {
           const { error } = await supabase.from('certificaten').delete().eq('id', certificaat.id)
 
-          if (!error) certificatenStore.removeCertificaat(name)
+          if (!error && certificaat.id) certificatenStore.removeCertificaatById(certificaat.id)
         }
       } else {
         const { error } = await supabase.storage.from('certificaten').remove([`Asbest/${certificaat.naam}`])
@@ -357,7 +365,7 @@
         } else {
           const { error } = await supabase.from('certificaten').delete().eq('id', certificaat.id)
 
-          if (!error) certificatenStore.removeCertificaat(name)
+          if (!error && certificaat.id) certificatenStore.removeCertificaatById(certificaat.id)
         }
       }
     }
@@ -497,10 +505,10 @@
           await addEventToCalendar(keuringForm, asbestDeskundige.gebruikersnaam, TypeKeuring.ASBEST)
         }
       }
+    }
 
-      if (keuringForm.created_by?.organisatie.naam !== 'WoonExpertVlaanderen') {
-        notifyKeuringCreatorDateVisitIsPlanned()
-      }
+    if (certificateFilesAdded.value > 0 && keuringForm.created_by?.organisatie.naam !== 'WoonExpertVlaanderen') {
+      notifyKeuringCreatorCertificateIsAvailable()
     }
 
     updateKeuring()

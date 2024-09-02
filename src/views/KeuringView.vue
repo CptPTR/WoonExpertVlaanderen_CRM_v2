@@ -6,7 +6,6 @@
   import { ToegangEenheid } from '@/enums/modules/ToegangEenheid'
   import { useAdressenStore } from '@/stores/adressenStore'
   import { useCertificaatStore } from '@/stores/certificatenStore'
-  import { useDeskundigenStore } from '@/stores/deskundigenStore'
   import { useExtraDocumentStore } from '@/stores/extraDocumentenStore'
   import { useFacturatiesStore } from '@/stores/facturatiesStore'
   import { useKeuringenStore } from '@/stores/keuringenStore'
@@ -17,7 +16,7 @@
   import { Icon } from '@iconify/vue'
   import TabPanel from 'primevue/tabpanel'
   import TabView from 'primevue/tabview'
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onBeforeMount, onMounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { getStatusColor } from './../utils/colors'
 
@@ -25,7 +24,6 @@
   const router = useRouter()
   const paramId = route.params.id as string
 
-  const deskundigenStore = useDeskundigenStore()
   const keuringenStore = useKeuringenStore()
   const extraDocumentenStore = useExtraDocumentStore()
   const certificatenStore = useCertificaatStore()
@@ -37,15 +35,16 @@
   const keuring = ref<Keuring>()
   const isDeleteConfirmationOpen = ref<boolean>(false)
 
-  const editKeuring = (id: string) => {
+  onBeforeMount(() => {
     certificatenStore.empty()
     extraDocumentenStore.empty()
+  })
+
+  const editKeuring = (id: string) => {
     router.push(`/keuringen/${id}/edit`)
   }
 
   const handleClickGoBackButton = () => {
-    certificatenStore.empty()
-    extraDocumentenStore.empty()
     router.push('/keuringen')
   }
 
@@ -55,6 +54,7 @@
     if (data) {
       data.map((cert) => {
         certificatenStore.addCertificaat({
+          created_at: cert.created_at,
           naam: cert.name,
           size: cert.size,
           type: cert.type,
@@ -173,6 +173,13 @@
     return ''
   })
 
+  const isLessThanOneDayOld = (createdAt: string) => {
+    const now = new Date()
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    const createdAtDate = new Date(createdAt)
+    return createdAtDate > twentyFourHoursAgo
+  }
+
   onMounted(async () => {
     keuring.value = keuringenStore.getKeuring(paramId)
 
@@ -290,6 +297,7 @@
                 <div>
                   <span class="naam text-sm">
                     {{ certificaat.naam }}
+                    <p v-if="isLessThanOneDayOld(certificaat.created_at)" class="recent">Recent geüpload</p>
                   </span>
                   <span class="size text-xs"> ({{ formatFileSize(certificaat.size) }}) </span>
                 </div>
@@ -492,8 +500,16 @@
         }
 
         .naam {
+          position: relative;
           font-weight: bold;
           flex: 1;
+
+          .recent {
+            position: absolute;
+            top: 5px;
+            color: green;
+            font-size: 0.7rem;
+          }
         }
 
         .download {
