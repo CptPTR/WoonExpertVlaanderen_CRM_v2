@@ -173,6 +173,7 @@
           avatar: data.created_by.avatar,
           specialisatie: data.created_by.specialisatie,
           organisatie: {
+            id: data.created_by.organisatie.id,
             naam: data.created_by.organisatie.naam
           }
         }
@@ -521,6 +522,7 @@
         opmerking: keuringForm.opmerking,
         toegang_eenheid: keuringForm.toegang_eenheid,
         created_by: keuringForm.created_by?.id,
+        organisatie_ID: keuringForm.created_by?.organisatie.id,
         klant_ID: keuringForm.klantID,
         facturatie_ID: keuringForm.facturatieID,
         facturatie_bestemming: keuringForm.facturatie_bestemming,
@@ -545,6 +547,7 @@
         datum_toewijzing: new Date(updatedKeuring.created_at),
         datum_plaatsbezoek: updatedKeuring.datum_plaatsbezoek ? new Date(updatedKeuring.datum_plaatsbezoek) : null,
         created_by: updatedKeuring.created_by,
+        organisatie_ID: updatedKeuring.organisatie_ID,
         opmerking: updatedKeuring.opmerking,
         facturatieID: updatedKeuring.facturatie_ID,
         event_ID: updatedKeuring.event_ID,
@@ -820,7 +823,7 @@
                       @change="handleChangeFacturatieBestemming"
                       :value="FacturatieBestemming.IMMO"
                     />
-                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn?.rol === 'immo'">{{ authStore.currentlyLoggedIn?.organisatie.naam }}</label>
+                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn?.rol.includes('immo')">{{ authStore.currentlyLoggedIn?.organisatie.naam }}</label>
                     <label for="fac_immo" v-else>Immo</label>
                   </span>
                   <span class="rb-anders" v-if="keuringClient">

@@ -78,6 +78,7 @@ const getKeuringData = async () => {
         datum_toewijzing: new Date(keuring.created_at),
         datum_plaatsbezoek: keuring.datum_plaatsbezoek ? new Date(keuring.datum_plaatsbezoek) : null,
         created_by: keuring.created_by,
+        organisatie_ID: keuring.created_by.organisatie.id,
         opmerking: keuring.opmerking,
         facturatie_bestemming: keuring.facturatie_bestemming,
         event_ID: keuring.event_ID,
@@ -280,7 +281,7 @@ router.beforeEach(async (to) => {
   } = await supabase.auth.getUser()
 
   if (user) {
-    const { data: gebruikerData } = await supabase.from('gebruikers').select(`*, organisatie: organisaties(naam)`).eq('id', user.id).single()
+    const { data: gebruikerData } = await supabase.from('gebruikers').select(`*, organisatie: organisaties(id, naam)`).eq('id', user.id).single()
 
     if (gebruikerData) {
       authStore.setCurrentlyLoggedIn({
@@ -293,6 +294,7 @@ router.beforeEach(async (to) => {
         rol: gebruikerData.rol,
         specialisatie: gebruikerData.specialisatie,
         organisatie: {
+          id: gebruikerData.organisatie.id,
           naam: gebruikerData.organisatie.naam
         },
         avatar: gebruikerData.avatar

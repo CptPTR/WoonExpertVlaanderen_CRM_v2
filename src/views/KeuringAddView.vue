@@ -51,7 +51,7 @@
     adresID: '',
     klantID: '',
     facturatieID: null,
-    facturatie_bestemming: (authStore.currentlyLoggedIn?.rol as string) === 'immo' ? FacturatieBestemming.IMMO : FacturatieBestemming.HETZELFDE,
+    facturatie_bestemming: (authStore.currentlyLoggedIn?.rol as string).includes('immo') ? FacturatieBestemming.IMMO : FacturatieBestemming.HETZELFDE,
 
     status: Status.NIEUW,
     opmerking: '',
@@ -70,6 +70,7 @@
       rol: authStore.currentlyLoggedIn?.rol as Rol,
       specialisatie: authStore.currentlyLoggedIn?.specialisatie as TypeKeuring,
       organisatie: {
+        id: authStore.currentlyLoggedIn?.organisatie.id as string,
         naam: authStore.currentlyLoggedIn?.organisatie.naam as string
       },
       avatar: authStore.currentlyLoggedIn?.avatar as string
@@ -283,6 +284,7 @@
       .insert([
         {
           created_by: keuringForm.created_by?.id,
+          organisatie_ID: keuringForm.created_by?.organisatie.id,
           adres_ID: keuringForm.adresID,
           klant_ID: keuringForm.klantID,
           facturatie_ID: keuringForm.facturatieID,
@@ -358,6 +360,7 @@
         datum_toewijzing: new Date(uploadedKeuring.created_at),
         datum_plaatsbezoek: uploadedKeuring.datum_plaatsbezoek ? new Date(uploadedKeuring.datum_plaatsbezoek) : null,
         created_by: uploadedKeuring.created_by,
+        organisatie_ID: uploadedKeuring.organisatie_ID,
         opmerking: uploadedKeuring.opmerking,
         facturatieID: uploadedKeuring.facturatie_ID,
         event_ID: uploadedKeuring.event_ID,
@@ -737,7 +740,7 @@
                       @change="handleChangeFacturatieBestemming"
                       :value="FacturatieBestemming.IMMO"
                     />
-                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn?.rol === 'immo'">{{ authStore?.currentlyLoggedIn.organisatie.naam }}</label>
+                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn?.rol.includes('immo')">{{ authStore?.currentlyLoggedIn.organisatie.naam }}</label>
                     <label for="fac_immo" v-else>Immo</label>
                   </span>
                   <span class="rb-anders" v-if="keuringClient">

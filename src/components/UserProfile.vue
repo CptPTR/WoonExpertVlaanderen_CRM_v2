@@ -111,7 +111,7 @@
         {{ `${authStore.currentlyLoggedIn.specialisatie} ${authStore.currentlyLoggedIn.rol}` }}
       </span>
       <span class="type text-xs" v-else>
-        {{ authStore.currentlyLoggedIn.organisatie.naam }}
+        {{ `${authStore.currentlyLoggedIn.rol.includes('sv') ? 'Supervisor -' : ''} ${authStore.currentlyLoggedIn.organisatie.naam}` }}
       </span>
     </div>
     <WEVAvatar :profilePicture="profilePictureURL" @click="showProfileDropDown = !showProfileDropDown" />
