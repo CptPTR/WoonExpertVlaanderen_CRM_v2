@@ -16,7 +16,7 @@
     event.preventDefault()
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(emailToResetPassword.value, {
-      redirectTo: `${location.origin}/reset-password`
+      redirectTo: `${process.env.FRONTEND_BASE_URL}/reset-password`
     })
 
     if (error) {

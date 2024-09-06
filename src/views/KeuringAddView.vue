@@ -51,7 +51,7 @@
     adresID: '',
     klantID: '',
     facturatieID: null,
-    facturatie_bestemming: (authStore.currentlyLoggedIn?.rol as string) === 'immo' ? FacturatieBestemming.IMMO : FacturatieBestemming.HETZELFDE,
+    facturatie_bestemming: (authStore.currentlyLoggedIn?.rol as string).includes('immo') ? FacturatieBestemming.IMMO : FacturatieBestemming.HETZELFDE,
 
     status: Status.NIEUW,
     opmerking: '',
@@ -70,6 +70,7 @@
       rol: authStore.currentlyLoggedIn?.rol as Rol,
       specialisatie: authStore.currentlyLoggedIn?.specialisatie as TypeKeuring,
       organisatie: {
+        id: authStore.currentlyLoggedIn?.organisatie.id as string,
         naam: authStore.currentlyLoggedIn?.organisatie.naam as string
       },
       avatar: authStore.currentlyLoggedIn?.avatar as string
@@ -120,7 +121,7 @@
     () => keuringForm.type,
     (newType, oldType) => {
       if (newType.includes(TypeKeuring.EPC)) {
-        const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'dclercqpeter@gmail.com')!
+        const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === process.env.DEFAULT_EPC)!
 
         if (epcDeskundige.id) {
           keuringForm.epc_toegewezen_aan = epcDeskundige.id
@@ -130,7 +131,7 @@
       }
 
       if (newType.includes(TypeKeuring.ASBEST)) {
-        const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'peter.asbest.wev@gmail.com')!
+        const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === process.env.DEFAULT_ASBEST)!
 
         if (asbestDeskundige.id) {
           keuringForm.asbest_toegewezen_aan = asbestDeskundige.id
@@ -176,13 +177,13 @@
 
   const uploadExtraDocumenten = async (event: Event) => {
     const { files } = event.target as HTMLInputElement
-
     if (files) {
       const fileListArray = Array.from(files || [])
+
       for (const file of fileListArray) {
-        const { error } = await supabase.storage.from('extra-documenten').upload(`/${file.name}`, file)
+        const { error } = await supabase.storage.from('extra-documenten').upload(file.name, file)
         if (error) {
-          console.error('Could not upload document')
+          console.error('Could not upload extra document')
         } else {
           extraDocumentenStore.addExtraDocument({
             naam: file.name,
@@ -190,6 +191,17 @@
             type: file.type,
             adresID: keuringForm.adresID
           })
+
+          const { error: errorUploadedExtraDocument } = await supabase.from('extra_documenten').insert([
+            {
+              naam: file.name,
+              size: file.size,
+              type: file.type,
+              adres_ID: keuringForm.adresID
+            }
+          ])
+
+          if (errorUploadedExtraDocument) console.error('Could not insert extra document into DB')
         }
       }
     }
@@ -219,6 +231,7 @@
             console.error('Could not upload EPC certificate')
           } else {
             certificatenStore.addCertificaat({
+              created_at: new Date(Date.now()),
               naam: file.name,
               size: file.size,
               type: TypeKeuring.EPC,
@@ -231,6 +244,7 @@
             console.error('Could not upload Asbest certificate')
           } else {
             certificatenStore.addCertificaat({
+              created_at: new Date(Date.now()),
               naam: file.name,
               size: file.size,
               type: TypeKeuring.ASBEST,
@@ -272,6 +286,7 @@
       .insert([
         {
           created_by: keuringForm.created_by?.id,
+          organisatie_ID: keuringForm.created_by?.organisatie.id,
           adres_ID: keuringForm.adresID,
           klant_ID: keuringForm.klantID,
           facturatie_ID: keuringForm.facturatieID,
@@ -347,6 +362,7 @@
         datum_toewijzing: new Date(uploadedKeuring.created_at),
         datum_plaatsbezoek: uploadedKeuring.datum_plaatsbezoek ? new Date(uploadedKeuring.datum_plaatsbezoek) : null,
         created_by: uploadedKeuring.created_by,
+        organisatie_ID: uploadedKeuring.organisatie_ID,
         opmerking: uploadedKeuring.opmerking,
         facturatieID: uploadedKeuring.facturatie_ID,
         event_ID: uploadedKeuring.event_ID,
@@ -359,7 +375,7 @@
       extraDocumentenStore.empty()
 
       if (uploadedKeuring.epc_toegewezen_aan) {
-        const epcDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.epc_toegewezen_aan === deskundige.id && deskundige.email !== 'dclercqpeter@gmail.com')!
+        const epcDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.epc_toegewezen_aan === deskundige.id && deskundige.email !== process.env.ADMIN_MAIL)!
         epcDeskundigen.map(async (deskundige) => {
           await sendMail(
             deskundige.email,
@@ -371,7 +387,7 @@
       }
 
       if (uploadedKeuring.asbest_toegewezen_aan && uploadedKeuring.asbest_toegewezen_aan !== uploadedKeuring.epc_toegewezen_aan) {
-        const asbestDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.asbest_toegewezen_aan === deskundige.id && deskundige.email !== 'dclercqpeter@gmail.com')!
+        const asbestDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.asbest_toegewezen_aan === deskundige.id && deskundige.email !== process.env.ADMIN_MAIL)!
         asbestDeskundigen.map(async (deskundige) => {
           await sendMail(
             deskundige.email,
@@ -383,7 +399,7 @@
       }
 
       await sendMail(
-        'dclercqpeter@gmail.com',
+        `${process.env.ADMIN_MAIL}`,
         `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
         uploadedKeuring.type,
         `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
@@ -413,9 +429,9 @@
         endTime.setMinutes(keuring.datum_plaatsbezoek.getMinutes() + 45)
 
         const event = {
-          summary: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}${keuringAddress.value.busnummer ? ' ' + keuringAddress.value.busnummer : ''}, ${vlaamseStad.value.postcode} ${
-            vlaamseStad.value.gemeente
-          }`,
+          summary: `${keuringForm.type.join(' + ')} - ${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}${keuringAddress.value.busnummer ? ' ' + keuringAddress.value.busnummer : ''}, ${
+            vlaamseStad.value.postcode
+          } ${vlaamseStad.value.gemeente}`,
           location: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}${keuringAddress.value.busnummer ? ' ' + keuringAddress.value.busnummer : ''}, ${vlaamseStad.value.postcode} ${
             vlaamseStad.value.gemeente
           }`,
@@ -561,7 +577,7 @@
               <input type="checkbox" name="typekeuring" id="tk_epc" :value="TypeKeuring.EPC" v-model="keuringForm.type" />
               <label for="tk_epc">{{ TypeKeuring.EPC }}</label>
               <Dropdown
-                v-if="keuringForm.epc_toegewezen_aan && authStore.currentlyLoggedIn.organisatie.naam === 'WoonExpertVlaanderen'"
+                v-if="keuringForm.epc_toegewezen_aan && authStore.currentlyLoggedIn?.organisatie.naam === 'WoonExpertVlaanderen'"
                 v-model="keuringForm.epc_toegewezen_aan"
                 :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.EPC))"
                 optionValue="id"
@@ -582,7 +598,7 @@
               <input type="checkbox" name="typekeuring" id="tk_asbest" :value="TypeKeuring.ASBEST" v-model="keuringForm.type" />
               <label for="tk_asbest" class="ml-2">{{ TypeKeuring.ASBEST }}</label>
               <Dropdown
-                v-if="keuringForm.asbest_toegewezen_aan && authStore.currentlyLoggedIn.organisatie.naam === 'WoonExpertVlaanderen'"
+                v-if="keuringForm.asbest_toegewezen_aan && authStore.currentlyLoggedIn?.organisatie.naam === 'WoonExpertVlaanderen'"
                 v-model="keuringForm.asbest_toegewezen_aan"
                 :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.ASBEST))"
                 optionValue="id"
@@ -682,7 +698,7 @@
               </span>
             </div>
           </div>
-          <div class="datum-plaatsbezoek-wrapper" v-if="keuringForm.type.length && keuringAddress && keuringClient && authStore.currentlyLoggedIn.rol === 'deskundige'">
+          <div class="datum-plaatsbezoek-wrapper" v-if="keuringForm.type.length && keuringAddress && keuringClient && authStore.currentlyLoggedIn?.rol === 'deskundige'">
             <h3 class="text-base">Datum Plaatsbezoek</h3>
             <VueDatePicker
               uid="wev-add-keuring-datepicker"
@@ -726,7 +742,7 @@
                       @change="handleChangeFacturatieBestemming"
                       :value="FacturatieBestemming.IMMO"
                     />
-                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn.rol === 'immo'">{{ authStore.currentlyLoggedIn.organisatie.naam }}</label>
+                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn?.rol.includes('immo')">{{ authStore?.currentlyLoggedIn.organisatie.naam }}</label>
                     <label for="fac_immo" v-else>Immo</label>
                   </span>
                   <span class="rb-anders" v-if="keuringClient">

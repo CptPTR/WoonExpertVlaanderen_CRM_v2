@@ -31,7 +31,6 @@
   import { useToast } from 'primevue/usetoast'
   import { computed, onBeforeMount, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import { formatDate } from '@/utils/formatting'
   import SelectedFacturatie from '@/components/SelectedFacturatie.vue'
 
   const authStore = useAuthStore()
@@ -49,6 +48,7 @@
   const loadingKeuring = ref<boolean>(true)
   const editClientEmailPhoneNumber = ref<boolean>(false)
   const datum_plaatsbezoek_edited = ref<boolean>(false)
+  const certificateFilesAdded = ref<number>(0)
   const keuringForm: FormKeuring = reactive({
     type: [],
 
@@ -104,21 +104,21 @@
     isFacturatieSubFormVisible.value = false
   }
 
-  const sendNotifToCreator = async (to: string, subject: string, location: string, klant: string, date: string, type: TypeKeuring[]) => {
-    await axios.post(`${process.env.BACKEND_BASE_URL}/notify-updated-date-visit`, { to, subject, location, klant, date, type })
+  const sendNotifToCreator = async (to: string, subject: string, location: string, klant: string, type: string, link: string) => {
+    await axios.post(`${process.env.BACKEND_BASE_URL}/notify-certificate-available`, { to, subject, location, klant, type, link })
   }
 
-  const notifyKeuringCreatorDateVisitIsPlanned = async () => {
-    if (keuringForm.created_by && keuringClient.value && keuringAddress.value && vlaamseStad.value && keuringForm.datum_plaatsbezoek) {
+  const notifyKeuringCreatorCertificateIsAvailable = async () => {
+    if (keuringForm.created_by && keuringAddress.value && keuringClient.value && vlaamseStad.value) {
       await sendNotifToCreator(
         keuringForm.created_by.email,
-        `Keuring ingepland voor ${keuringForm.datum_plaatsbezoek}`,
+        'Nieuw attest beschikbaar',
         `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer}${keuringAddress.value.busnummer ? ` ${keuringAddress.value.busnummer}` : ''}, ${vlaamseStad.value.postcode} ${
           vlaamseStad.value.gemeente
         }`,
         `${keuringClient.value.voornaam} ${keuringClient.value.achternaam}`,
-        formatDate(keuringForm.datum_plaatsbezoek),
-        keuringForm.type
+        keuringForm.type.join(' + '),
+        `${process.env.FRONTEND_BASE_URL}/keuringen/${route.params.id}`
       )
     }
   }
@@ -127,7 +127,7 @@
     () => keuringForm.type,
     (newType, oldType) => {
       if (newType.includes(TypeKeuring.EPC)) {
-        const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'dclercqpeter@gmail.com')!
+        const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === process.env.DEFAULT_EPC)!
 
         if (epcDeskundige.id) {
           keuringForm.epc_toegewezen_aan = epcDeskundige.id
@@ -137,7 +137,7 @@
       }
 
       if (newType.includes(TypeKeuring.ASBEST)) {
-        const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === 'peter.asbest.wev@gmail.com')!
+        const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === process.env.DEFAULT_ASBEST)!
 
         if (asbestDeskundige.id) {
           keuringForm.asbest_toegewezen_aan = asbestDeskundige.id
@@ -149,6 +149,9 @@
   )
 
   onBeforeMount(async () => {
+    certificatenStore.empty()
+    extraDocumentenStore.empty()
+
     try {
       const { data } = await supabase.from('keuringen').select('*, created_by: gebruikers!keuringen_created_by_fkey(*, organisatie: organisaties(naam))').eq('id', route.params.id).single()
 
@@ -173,6 +176,7 @@
           avatar: data.created_by.avatar,
           specialisatie: data.created_by.specialisatie,
           organisatie: {
+            id: data.created_by.organisatie.id,
             naam: data.created_by.organisatie.naam
           }
         }
@@ -188,6 +192,7 @@
         certificatenData.map((certificaat) => {
           certificatenStore.addCertificaat({
             id: certificaat.id,
+            created_at: certificaat.created_at,
             naam: certificaat.name,
             type: certificaat.type,
             size: certificaat.size,
@@ -283,6 +288,7 @@
             console.error('Could not upload EPC certificate')
           } else {
             certificatenStore.addCertificaat({
+              created_at: new Date(Date.now()),
               naam: file.name,
               size: file.size,
               type: TypeKeuring.EPC,
@@ -301,6 +307,7 @@
             }
 
             keuringForm.status = Status.CERTIFICAAT_BESCHIKBAAR
+            certificateFilesAdded.value++
           }
         } else {
           const { error } = await supabase.storage.from('certificaten').upload(`Asbest/${file.name}`, file)
@@ -308,6 +315,7 @@
             console.error('Could not upload Asbest certificate')
           } else {
             certificatenStore.addCertificaat({
+              created_at: new Date(Date.now()),
               naam: file.name,
               size: file.size,
               type: TypeKeuring.ASBEST,
@@ -326,16 +334,17 @@
             }
 
             keuringForm.status = Status.CERTIFICAAT_BESCHIKBAAR
+            certificateFilesAdded.value++
           }
         }
       }
     }
   }
 
-  const removeCertificaat = async (event: Event, name: string, typeKeuring: TypeKeuring) => {
+  const removeCertificaat = async (event: Event, id: string, typeKeuring: TypeKeuring) => {
     event.preventDefault()
 
-    const certificaat = certificatenStore.certificaten.find((cert) => cert.naam === name)
+    const certificaat = certificatenStore.certificaten.find((cert) => cert.id === id)
 
     if (certificaat) {
       if (typeKeuring === TypeKeuring.EPC) {
@@ -346,7 +355,7 @@
         } else {
           const { error } = await supabase.from('certificaten').delete().eq('id', certificaat.id)
 
-          if (!error) certificatenStore.removeCertificaat(name)
+          if (!error && certificaat.id) certificatenStore.removeCertificaatById(certificaat.id)
         }
       } else {
         const { error } = await supabase.storage.from('certificaten').remove([`Asbest/${certificaat.naam}`])
@@ -356,7 +365,7 @@
         } else {
           const { error } = await supabase.from('certificaten').delete().eq('id', certificaat.id)
 
-          if (!error) certificatenStore.removeCertificaat(name)
+          if (!error && certificaat.id) certificatenStore.removeCertificaatById(certificaat.id)
         }
       }
     }
@@ -394,18 +403,16 @@
     }
   }
 
-  const removeDocument = async (event: Event, index: number) => {
+  const removeDocument = async (event: Event, name: string) => {
     event.preventDefault()
 
-    const extraDocument = extraDocumentenStore.extra_documenten[index].naam
-
-    const { error } = await supabase.storage.from('extra-documenten').remove([`${extraDocumentenStore.extra_documenten[index].naam}`])
+    const { error } = await supabase.storage.from('extra-documenten').remove([`${name}`])
     if (error) {
-      console.error(`Unable to remove ${extraDocumentenStore.extra_documenten[index].naam} from the storage`)
+      console.error(`Unable to remove ${name} from the storage`)
     } else {
-      const { error } = await supabase.from('extra_documenten').delete().eq('naam', extraDocument)
+      const { error } = await supabase.from('extra_documenten').delete().eq('naam', name)
 
-      if (!error) extraDocumentenStore.removeExtraDocument(extraDocumentenStore.extra_documenten[index].naam)
+      if (!error) extraDocumentenStore.removeExtraDocument(name)
     }
   }
 
@@ -442,9 +449,9 @@
         endTime.setMinutes(keuring.datum_plaatsbezoek.getMinutes() + 45)
 
         const event = {
-          summary: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer} ${keuringAddress.value.busnummer ? ' ' + keuringAddress.value.busnummer : ''}, ${vlaamseStad.value.postcode} ${
-            vlaamseStad.value.gemeente
-          }`,
+          summary: `${keuringForm.type.join(' + ')} - ${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer} ${
+            keuringAddress.value.busnummer ? ' ' + keuringAddress.value.busnummer : ''
+          }, ${vlaamseStad.value.postcode} ${vlaamseStad.value.gemeente}`,
           location: `${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer} ${keuringAddress.value.busnummer ? ' ' + keuringAddress.value.busnummer : ''}, ${vlaamseStad.value.postcode} ${
             vlaamseStad.value.gemeente
           }`,
@@ -498,10 +505,10 @@
           await addEventToCalendar(keuringForm, asbestDeskundige.gebruikersnaam, TypeKeuring.ASBEST)
         }
       }
+    }
 
-      if (keuringForm.created_by?.organisatie.naam !== 'WoonExpertVlaanderen') {
-        notifyKeuringCreatorDateVisitIsPlanned()
-      }
+    if (certificateFilesAdded.value > 0 && keuringForm.created_by?.organisatie.naam !== 'WoonExpertVlaanderen') {
+      notifyKeuringCreatorCertificateIsAvailable()
     }
 
     updateKeuring()
@@ -523,6 +530,7 @@
         opmerking: keuringForm.opmerking,
         toegang_eenheid: keuringForm.toegang_eenheid,
         created_by: keuringForm.created_by?.id,
+        organisatie_ID: keuringForm.created_by?.organisatie.id,
         klant_ID: keuringForm.klantID,
         facturatie_ID: keuringForm.facturatieID,
         facturatie_bestemming: keuringForm.facturatie_bestemming,
@@ -547,6 +555,7 @@
         datum_toewijzing: new Date(updatedKeuring.created_at),
         datum_plaatsbezoek: updatedKeuring.datum_plaatsbezoek ? new Date(updatedKeuring.datum_plaatsbezoek) : null,
         created_by: updatedKeuring.created_by,
+        organisatie_ID: updatedKeuring.organisatie_ID,
         opmerking: updatedKeuring.opmerking,
         facturatieID: updatedKeuring.facturatie_ID,
         event_ID: updatedKeuring.event_ID,
@@ -656,7 +665,7 @@
               <input type="checkbox" name="typeKeuring" id="tk_epc" :value="TypeKeuring.EPC" v-model="keuringForm.type" />
               <label for="tk_epc">{{ TypeKeuring.EPC }}</label>
               <Dropdown
-                v-if="keuringForm.epc_toegewezen_aan && authStore.currentlyLoggedIn.organisatie.naam === 'WoonExpertVlaanderen'"
+                v-if="keuringForm.epc_toegewezen_aan && authStore.currentlyLoggedIn?.organisatie.naam === 'WoonExpertVlaanderen'"
                 v-model="keuringForm.epc_toegewezen_aan"
                 :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.EPC))"
                 optionValue="id"
@@ -677,7 +686,7 @@
               <input type="checkbox" name="typeKeuring" id="tk_asbest" :value="TypeKeuring.ASBEST" v-model="keuringForm.type" />
               <label for="tk_asbest">{{ TypeKeuring.ASBEST }}</label>
               <Dropdown
-                v-if="keuringForm.asbest_toegewezen_aan && authStore.currentlyLoggedIn.organisatie.naam === 'WoonExpertVlaanderen'"
+                v-if="keuringForm.asbest_toegewezen_aan && authStore.currentlyLoggedIn?.organisatie.naam === 'WoonExpertVlaanderen'"
                 v-model="keuringForm.asbest_toegewezen_aan"
                 :options="deskundigenStore.deskundigen.filter((d: Gebruiker) => d.specialisatie.includes(TypeKeuring.ASBEST))"
                 optionValue="id"
@@ -777,7 +786,7 @@
               </span>
             </div>
           </div>
-          <div class="datum-plaatsbezoek-wrapper" v-if="vlaamseStad && keuringAddress && keuringClient && authStore.currentlyLoggedIn.rol === 'deskundige'">
+          <div class="datum-plaatsbezoek-wrapper" v-if="vlaamseStad && keuringAddress && keuringClient && authStore.currentlyLoggedIn?.rol === 'deskundige'">
             <h3 class="text-base">Datum Plaatsbezoek</h3>
             <VueDatePicker
               uid="wev-edit-keuring-datepicker"
@@ -822,7 +831,7 @@
                       @change="handleChangeFacturatieBestemming"
                       :value="FacturatieBestemming.IMMO"
                     />
-                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn.rol === 'immo'">{{ authStore.currentlyLoggedIn.organisatie.naam }}</label>
+                    <label for="fac_immo" v-if="authStore.currentlyLoggedIn?.rol.includes('immo')">{{ authStore.currentlyLoggedIn?.organisatie.naam }}</label>
                     <label for="fac_immo" v-else>Immo</label>
                   </span>
                   <span class="rb-anders" v-if="keuringClient">
@@ -904,7 +913,7 @@
         v-if="isCertificatesUploaderVisible"
         :form="keuringForm"
         @toggleSubForm="isCertificatesUploaderVisible = !isCertificatesUploaderVisible"
-        @uploadCertificaten="(event: Event, type: TypeKeuring, keuring: string) => uploadCertificaat(event, type, keuring)"
+        @uploadCertificaten="(event: Event, type: TypeKeuring) => uploadCertificaat(event, type)"
         @removeCertificaat="(event: Event, name: string, type: TypeKeuring) => removeCertificaat(event, name, type)"
       />
       <WEVExtraDocsForm

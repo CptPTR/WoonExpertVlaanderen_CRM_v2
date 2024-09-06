@@ -138,7 +138,7 @@
             <th class="text-sm">status</th>
             <th></th>
           </tr>
-          <tr v-for="keuring in finalKeuringen.slice(MAX_ROWS * currentPage - MAX_ROWS, MAX_ROWS * currentPage)" :key="keuring.id" @dblclick="viewKeuring(keuring.id)">
+          <tr v-for="keuring in finalKeuringen.slice(MAX_ROWS * currentPage - MAX_ROWS, MAX_ROWS * currentPage)" :key="keuring.id" @dblclick="viewKeuring(keuring.id!)">
             <KeuringenItem :keuring="keuring" @view-keuring="viewKeuring" @edit-keuring="editKeuring" @delete-keuring="deleteKeuring" />
           </tr>
         </table>

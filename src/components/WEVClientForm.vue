@@ -30,6 +30,7 @@
     return (
       klantenStore.klanten.filter(
         (klant: Klant) =>
+          klant.created_by === authStore.currentlyLoggedIn?.id &&
           klant.voornaam.toLowerCase() === form.value.voornaam.toLowerCase() &&
           klant.achternaam.toLowerCase() === form.value.achternaam.toLowerCase() &&
           klant.emailadres.toLowerCase() === form.value.emailadres.toLowerCase() &&

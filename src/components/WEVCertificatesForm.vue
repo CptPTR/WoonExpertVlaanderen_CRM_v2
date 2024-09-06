@@ -42,7 +42,7 @@
                 {{ formatFileSize(cert.size) }}
               </span>
             </p>
-            <button @click="(event: Event) => emits('removeCertificaat', event, cert.naam, cert.type)">
+            <button @click="(event: Event) => emits('removeCertificaat', event, cert.id, cert.type)">
               <Icon icon="mdi:delete" width="14" />
             </button>
           </li>
@@ -65,7 +65,7 @@
                 {{ formatFileSize(cert.size) }}
               </span>
             </p>
-            <button @click="(event: Event) => $emit('removeCertificaat', event, cert.naam, cert.type)">
+            <button @click="(event: Event) => $emit('removeCertificaat', event, cert.id, cert.type)">
               <Icon icon="mdi:delete" width="14" />
             </button>
           </li>

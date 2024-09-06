@@ -13,6 +13,10 @@ export const useCertificaatStore = defineStore('certificaten', () => {
     certificaten.value = certificaten.value.filter((certificaat) => certificaat.naam !== name)
   }
 
+  const removeCertificaatById = (id: string) => {
+    certificaten.value = certificaten.value.filter((certificaat) => certificaat.id !== id)
+  }
+
   const getCertificaat = (id: string) => {
     return certificaten.value.find((certificaat) => certificaat.id === id)
   }
@@ -25,5 +29,5 @@ export const useCertificaatStore = defineStore('certificaten', () => {
     certificaten.value = []
   }
 
-  return { certificaten, addCertificaat, removeCertificaat, getCertificaat, getCertificatenByKeuringId, empty }
+  return { certificaten, addCertificaat, removeCertificaat, removeCertificaatById, getCertificaat, getCertificatenByKeuringId, empty }
 })

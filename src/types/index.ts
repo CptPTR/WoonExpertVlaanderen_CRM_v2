@@ -47,6 +47,7 @@ export type Keuring = {
   datum_toewijzing: Date
   datum_plaatsbezoek: Date | null
   created_by: Gebruiker
+  organisatie_ID: string
   certificaten_epc?: Certificaat[]
   certificaten_asbest?: Certificaat[]
   extra_documenten?: ExtraDocument[]
@@ -91,6 +92,7 @@ export type Facturatie = {
 
 export type Certificaat = {
   id?: string
+  created_at: Date
   naam: string
   type: string
   size: number

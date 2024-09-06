@@ -1,4 +1,5 @@
 export enum Rol {
   DESKUNDIGE = 'deskundige',
-  IMMO = 'immo'
+  IMMO = 'mw-immo',
+  SV_IMMO = 'sv-immo'
 }
