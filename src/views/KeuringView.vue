@@ -173,6 +173,19 @@
     return ''
   })
 
+  const iconToegangEenheid = computed(() => {
+    if (keuring.value?.toegang_eenheid === ToegangEenheid.KLANT) {
+      return 'mdi:account'
+    }
+    if (keuring.value?.toegang_eenheid === ToegangEenheid.SLEUTELS) {
+      return 'mdi:key'
+    }
+    if (keuring.value?.toegang_eenheid === ToegangEenheid.HUURDER) {
+      return 'mdi:account-key'
+    }
+    return ''
+  })
+
   const isLessThanOneDayOld = (createdAt: string) => {
     const now = new Date()
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
@@ -208,7 +221,7 @@
           {{ keuring.created_by.organisatie.naam }}
         </span>
         <span :title="keuring.toegang_eenheid" class="badge toegang-eenheid text-xs">
-          <Icon :icon="keuring.toegang_eenheid === ToegangEenheid.KLANT ? 'mdi:handshake-outline' : 'mdi:key'" width="20" color="#fff" />
+          <Icon :icon="iconToegangEenheid" width="20" color="#fff" />
         </span>
         <span title="status" class="badge text-xs" :style="{ backgroundColor: `${getStatusColor(keuring.status)}` }">
           {{ keuring.status }}

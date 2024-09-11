@@ -784,6 +784,10 @@
                 <input type="radio" name="toegangEenheid" id="te_immo" :value="ToegangEenheid.SLEUTELS" v-model="keuringForm.toegang_eenheid" />
                 <label for="te_immo">Sleutels ophalen</label>
               </span>
+              <span class="rb-sleutels">
+                <input type="radio" name="toegangEenheid" id="te_huurder" :value="ToegangEenheid.HUURDER" v-model="keuringForm.toegang_eenheid" />
+                <label for="te_huurder">Huurder</label>
+              </span>
             </div>
           </div>
           <div class="datum-plaatsbezoek-wrapper" v-if="vlaamseStad && keuringAddress && keuringClient && authStore.currentlyLoggedIn?.rol === 'deskundige'">
