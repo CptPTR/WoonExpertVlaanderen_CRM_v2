@@ -46,8 +46,8 @@
   }
 
   const statusText = computed(() => {
-    if (keuring.status === Status.INGEPLAND && keuring.datum_plaatsbezoek) {
-      return `${keuring.status} op ${formatDate(new Date(keuring.datum_plaatsbezoek))}`
+    if ((keuring.status === Status.INGEPLAND || keuring.status === Status.IN_BEHANDELING) && keuring.datum_plaatsbezoek) {
+      return `${keuring.status} - ${formatDate(new Date(keuring.datum_plaatsbezoek))}`
     } else {
       return keuring.status
     }
