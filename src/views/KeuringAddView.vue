@@ -30,7 +30,7 @@
   import InputText from 'primevue/inputtext'
   import Textarea from 'primevue/textarea'
   import { useToast } from 'primevue/usetoast'
-  import { computed, reactive, ref, watch } from 'vue'
+  import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import SelectedFacturatie from '@/components/SelectedFacturatie.vue'
 
@@ -75,6 +75,7 @@
       },
       avatar: authStore.currentlyLoggedIn?.avatar as string
     },
+    admin_event_ID: null,
     event_ID: null,
     asbest_event_ID: null,
     epc_toegewezen_aan: null,
@@ -116,6 +117,11 @@
   const hideFacturatieSubForm = () => {
     isFacturatieSubFormVisible.value = false
   }
+
+  onBeforeMount(() => {
+    certificatenStore.empty()
+    extraDocumentenStore.empty()
+  })
 
   watch(
     () => keuringForm.type,
@@ -301,6 +307,7 @@
           opmerking: keuringForm.opmerking,
           toegang_eenheid: keuringForm.toegang_eenheid,
           datum_plaatsbezoek: keuringForm.datum_plaatsbezoek,
+          admin_event_ID: keuringForm.admin_event_ID,
           event_ID: keuringForm.event_ID,
           asbest_event_ID: keuringForm.asbest_event_ID,
           epc_toegewezen_aan: keuringForm.epc_toegewezen_aan,
@@ -365,6 +372,7 @@
         organisatie_ID: uploadedKeuring.organisatie_ID,
         opmerking: uploadedKeuring.opmerking,
         facturatieID: uploadedKeuring.facturatie_ID,
+        admin_event_ID: uploadedKeuring.admin_event_ID,
         event_ID: uploadedKeuring.event_ID,
         asbest_event_ID: uploadedKeuring.asbest_event_ID,
         epc_toegewezen_aan: uploadedKeuring.epc_toegewezen_aan,
@@ -441,8 +449,9 @@
           start: keuring.datum_plaatsbezoek,
           end: endTime
         }
-
-        const eventReceivingDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => deskundige.id === keuringForm.epc_toegewezen_aan || deskundige.id === keuringForm.asbest_toegewezen_aan)
+        const eventReceivingDeskundigen = deskundigenStore.deskundigen.filter(
+          (deskundige) => deskundige.gebruikersnaam === process.env.WEV_ADMIN || deskundige.id === keuringForm.epc_toegewezen_aan || deskundige.id === keuringForm.asbest_toegewezen_aan
+        )
         for (const deskundige of eventReceivingDeskundigen) {
           try {
             const response = await axios.post(`${process.env.BACKEND_BASE_URL}/calendars/${deskundige.gebruikersnaam}/events`, {
@@ -452,6 +461,9 @@
               eventStart: event.start,
               eventEnd: event.end
             })
+            if (deskundige.gebruikersnaam === process.env.WEV_ADMIN && deskundige.id !== keuringForm.epc_toegewezen_aan) {
+              keuringForm.admin_event_ID = response.data
+            }
             if (deskundige.id === keuringForm.epc_toegewezen_aan) {
               keuringForm.event_ID = response.data
             }
