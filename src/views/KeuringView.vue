@@ -178,7 +178,7 @@
       return 'mdi:account'
     }
     if (keuring.value?.toegang_eenheid === ToegangEenheid.SLEUTELS) {
-      return 'mdi:key'
+      return 'mdi:office-building'
     }
     if (keuring.value?.toegang_eenheid === ToegangEenheid.HUURDER) {
       return 'mdi:account-key'
