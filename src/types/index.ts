@@ -52,6 +52,7 @@ export type Keuring = {
   certificaten_asbest?: Certificaat[]
   extra_documenten?: ExtraDocument[]
   opmerking: string
+  admin_event_ID: string | null
   event_ID: string | null
   asbest_event_ID: string | null
   epc_toegewezen_aan: string | null
@@ -124,6 +125,7 @@ export type FormKeuring = {
   asbest_certificaten: Certificaat[]
   extra_documenten: ExtraDocument[]
   created_by: Gebruiker | null
+  admin_event_ID: string | null
   event_ID: string | null
   asbest_event_ID: string | null
   epc_toegewezen_aan: string | null
