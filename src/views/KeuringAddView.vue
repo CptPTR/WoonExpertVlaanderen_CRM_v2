@@ -30,7 +30,7 @@
   import InputText from 'primevue/inputtext'
   import Textarea from 'primevue/textarea'
   import { useToast } from 'primevue/usetoast'
-  import { computed, reactive, ref, watch } from 'vue'
+  import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import SelectedFacturatie from '@/components/SelectedFacturatie.vue'
 
@@ -116,6 +116,11 @@
   const hideFacturatieSubForm = () => {
     isFacturatieSubFormVisible.value = false
   }
+
+  onBeforeMount(() => {
+    certificatenStore.empty()
+    extraDocumentenStore.empty()
+  })
 
   watch(
     () => keuringForm.type,
