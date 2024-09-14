@@ -60,6 +60,11 @@
       console.error(`Could not delete keuring with id ${id} from the database.`)
     } else {
       if (keuringToDelete) {
+        if (keuringToDelete.admin_event_ID) {
+          const wevAdmin = deskundigeStore.deskundigen.find((deskundige) => deskundige.gebruikersnaam === process.env.WEV_ADMIN)!
+          await axios.delete(`${process.env.BACKEND_BASE_URL}/calendars/${wevAdmin.gebruikersnaam}/events/${keuringToDelete.admin_event_ID}`)
+        }
+
         if (keuringToDelete.event_ID && keuringToDelete.epc_toegewezen_aan) {
           const epcDeskundige = deskundigeStore.deskundigen.find((deskundige) => keuringToDelete.epc_toegewezen_aan === deskundige.id)!
           await axios.delete(`${process.env.BACKEND_BASE_URL}/calendars/${epcDeskundige.gebruikersnaam}/events/${keuringToDelete.event_ID}`)

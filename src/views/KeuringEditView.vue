@@ -65,6 +65,7 @@
     asbest_certificaten: [],
     extra_documenten: [],
     created_by: null,
+    admin_event_ID: null,
     event_ID: null,
     asbest_event_ID: null,
     epc_toegewezen_aan: null,
@@ -180,7 +181,7 @@
             naam: data.created_by.organisatie.naam
           }
         }
-        keuringForm.event_ID = data.event_ID
+        ;(keuringForm.admin_event_ID = data.admin_event_ID), (keuringForm.event_ID = data.event_ID)
         keuringForm.asbest_event_ID = data.asbest_event_ID
         keuringForm.epc_toegewezen_aan = data.epc_toegewezen_aan
         keuringForm.asbest_toegewezen_aan = data.asbest_toegewezen_aan
@@ -442,7 +443,7 @@
     }
   }
 
-  const addEventToCalendar = async (keuring: FormKeuring, to: string, type: TypeKeuring) => {
+  const addEventToCalendar = async (keuring: FormKeuring, to: string, type?: TypeKeuring) => {
     if (keuringClient.value) {
       if (keuring.datum_plaatsbezoek && keuringAddress.value && vlaamseStad.value) {
         const endTime = new Date(keuring.datum_plaatsbezoek)
@@ -476,6 +477,9 @@
           if (type === TypeKeuring.ASBEST) {
             keuringForm.asbest_event_ID = response.data
           }
+          if (!type) {
+            keuringForm.admin_event_ID = response.data
+          }
         } catch (error) {
           console.error(error)
         }
@@ -489,6 +493,15 @@
     if (datum_plaatsbezoek_edited.value && keuringForm.datum_plaatsbezoek) {
       const epcDeskundige = deskundigenStore.deskundigen.find((deskundige) => keuringForm.epc_toegewezen_aan === deskundige.id)!
       const asbestDeskundige = deskundigenStore.deskundigen.find((deskundige) => keuringForm.asbest_toegewezen_aan === deskundige.id)!
+      const wevAdmin = deskundigenStore.deskundigen.find((deskundige) => deskundige.gebruikersnaam === process.env.WEV_ADMIN)!
+
+      if (keuringForm.admin_event_ID && (epcDeskundige?.gebruikersnaam !== wevAdmin.gebruikersnaam || asbestDeskundige?.gebruikersnaam !== wevAdmin.gebruikersnaam)) {
+        await editEventToDate(wevAdmin.gebruikersnaam, keuringForm.admin_event_ID, keuringForm.datum_plaatsbezoek)
+      } else {
+        if (epcDeskundige?.gebruikersnaam !== wevAdmin.gebruikersnaam) {
+          await addEventToCalendar(keuringForm, wevAdmin.gebruikersnaam)
+        }
+      }
 
       if (keuringForm.event_ID && keuringForm.epc_toegewezen_aan) {
         await editEventToDate(epcDeskundige.gebruikersnaam, keuringForm.event_ID, keuringForm.datum_plaatsbezoek)
@@ -534,6 +547,7 @@
         klant_ID: keuringForm.klantID,
         facturatie_ID: keuringForm.facturatieID,
         facturatie_bestemming: keuringForm.facturatie_bestemming,
+        admin_event_ID: keuringForm.admin_event_ID,
         event_ID: keuringForm.event_ID,
         asbest_event_ID: keuringForm.asbest_event_ID,
         epc_toegewezen_aan: keuringForm.epc_toegewezen_aan,
@@ -558,6 +572,7 @@
         organisatie_ID: updatedKeuring.organisatie_ID,
         opmerking: updatedKeuring.opmerking,
         facturatieID: updatedKeuring.facturatie_ID,
+        admin_event_ID: updatedKeuring.admin_event_ID,
         event_ID: updatedKeuring.event_ID,
         asbest_event_ID: updatedKeuring.asbest_event_ID,
         epc_toegewezen_aan: updatedKeuring.epc_toegewezen_aan,
@@ -783,6 +798,10 @@
               <span class="rb-sleutels">
                 <input type="radio" name="toegangEenheid" id="te_immo" :value="ToegangEenheid.SLEUTELS" v-model="keuringForm.toegang_eenheid" />
                 <label for="te_immo">Sleutels ophalen</label>
+              </span>
+              <span class="rb-sleutels">
+                <input type="radio" name="toegangEenheid" id="te_huurder" :value="ToegangEenheid.HUURDER" v-model="keuringForm.toegang_eenheid" />
+                <label for="te_huurder">Huurder</label>
               </span>
             </div>
           </div>
