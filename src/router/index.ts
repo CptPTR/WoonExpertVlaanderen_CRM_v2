@@ -81,6 +81,7 @@ const getKeuringData = async () => {
         organisatie_ID: keuring.created_by.organisatie.id,
         opmerking: keuring.opmerking,
         facturatie_bestemming: keuring.facturatie_bestemming,
+        admin_event_ID: keuring.admin_event_ID,
         event_ID: keuring.event_ID,
         asbest_event_ID: keuring.asbest_event_ID,
         epc_toegewezen_aan: keuring.epc_toegewezen_aan,
