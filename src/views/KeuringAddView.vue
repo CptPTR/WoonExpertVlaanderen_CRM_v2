@@ -700,13 +700,13 @@
           <div class="toegang-eenheid text-base">
             <h3 class="text-base">Toegang tot eenheid</h3>
             <div class="text-sm">
-              <span class="rb-klant">
-                <input type="radio" name="toegangEenheid" id="te_klant" v-model="keuringForm.toegang_eenheid" :value="ToegangEenheid.KLANT" />
-                <label for="te_klant">Afspreken met klant</label>
-              </span>
               <span class="rb-sleutels">
                 <input type="radio" name="toegangEenheid" id="te_immo" v-model="keuringForm.toegang_eenheid" :value="ToegangEenheid.SLEUTELS" />
-                <label for="te_immo">Sleutels ophalen</label>
+                <label for="te_immo">Sleutels ophalen (IMMO)</label>
+              </span>
+              <span class="rb-klant">
+                <input type="radio" name="toegangEenheid" id="te_klant" v-model="keuringForm.toegang_eenheid" :value="ToegangEenheid.KLANT" />
+                <label for="te_klant">Afspreken met eigenaar</label>
               </span>
               <span class="rb-sleutels">
                 <input type="radio" name="toegangEenheid" id="te_huurder" v-model="keuringForm.toegang_eenheid" :value="ToegangEenheid.HUURDER" />
