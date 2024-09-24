@@ -50,7 +50,7 @@
       </div>
 
       <div class="asbest" v-if="props.form.type.includes(TypeKeuring.ASBEST)">
-        <input class="hidden" type="file" name="asbest_cert" id="asbest_cert" multiple accept="application/pdf" @change="(event: Event) => $emit('uploadCertificaten', event, TypeKeuring.ASBEST)" />
+        <input class="hidden" type="file" name="asbest_cert" id="asbest_cert" multiple accept="application/pdf" @change="(event: Event) => emits('uploadCertificaten', event, TypeKeuring.ASBEST)" />
         <label for="asbest_cert">
           <Icon icon="mdi:upload-multiple" width="22" />
           upload Asbest certificaat

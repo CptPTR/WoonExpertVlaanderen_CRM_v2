@@ -1,7 +1,7 @@
 <script lang="ts" setup>
+  import SelectedFacturatie from '@/components/SelectedFacturatie.vue'
   import WEVAddressForm from '@/components/WEVAddressForm.vue'
   import WEVBackButton from '@/components/WEVBackButton.vue'
-  import WEVCertificatesForm from '@/components/WEVCertificatesForm.vue'
   import WEVClientForm from '@/components/WEVClientForm.vue'
   import WEVExtraDocsForm from '@/components/WEVExtraDocsForm.vue'
   import WEVFacturatieForm from '@/components/WEVFacturatieForm.vue'
@@ -14,29 +14,26 @@
   import { TypeKeuring } from '@/enums/modules/TypeKeuring'
   import { useAdressenStore } from '@/stores/adressenStore'
   import { useAuthStore } from '@/stores/authStore'
-  import { useCertificaatStore } from '@/stores/certificatenStore'
   import { useDeskundigenStore } from '@/stores/deskundigenStore'
   import { useExtraDocumentStore } from '@/stores/extraDocumentenStore'
   import { useKeuringenStore } from '@/stores/keuringenStore'
   import { useKlantenStore } from '@/stores/klantenStore'
   import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
   import type { Adres, FormKeuring, Gebruiker } from '@/types'
+  import { Icon } from '@iconify/vue'
   import VueDatePicker from '@vuepic/vue-datepicker'
   import 'add-to-calendar-button'
   import axios from 'axios'
   import Button from 'primevue/button'
   import Dropdown from 'primevue/dropdown'
-  import { Icon } from '@iconify/vue'
   import InputText from 'primevue/inputtext'
   import Textarea from 'primevue/textarea'
   import { useToast } from 'primevue/usetoast'
   import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
-  import SelectedFacturatie from '@/components/SelectedFacturatie.vue'
 
   const authStore = useAuthStore()
   const keuringenStore = useKeuringenStore()
-  const certificatenStore = useCertificaatStore()
   const klantenStore = useKlantenStore()
   const adressenStore = useAdressenStore()
   const extraDocumentenStore = useExtraDocumentStore()
@@ -89,7 +86,6 @@
   const isAddressSubFormVisible = ref<boolean>(false)
   const isClientSubFormVisible = ref<boolean>(false)
   const isFacturatieSubFormVisible = ref<boolean>(false)
-  const isCertificatesUploaderVisible = ref<boolean>(false)
   const isExtraDocsUploaderVisible = ref<boolean>(false)
 
   const showAddressSubForm = () => {
@@ -119,7 +115,6 @@
   }
 
   onBeforeMount(() => {
-    certificatenStore.empty()
     extraDocumentenStore.empty()
   })
 
@@ -161,14 +156,6 @@
       return vlaamseStedenStore.getStadById(keuringAddress.value.vlaamse_stad_ID)
     }
     return ''
-  })
-
-  const epc_certificaten = computed(() => {
-    return certificatenStore.certificaten.filter((cert) => cert.type.includes(TypeKeuring.EPC))
-  })
-
-  const asbest_certificaten = computed(() => {
-    return certificatenStore.certificaten.filter((cert) => cert.type.includes(TypeKeuring.ASBEST))
   })
 
   const dropdownEPCValue = computed(() => {
@@ -224,68 +211,6 @@
     }
   }
 
-  const uploadCertificaat = async (event: Event, typeKeuring: TypeKeuring, keuring: string) => {
-    const { files } = event.target as HTMLInputElement
-
-    if (files) {
-      const fileListArray = Array.from(files || [])
-
-      for (const file of fileListArray) {
-        if (typeKeuring === TypeKeuring.EPC) {
-          const { error } = await supabase.storage.from('certificaten').upload(`EPC/${file.name}`, file)
-          if (error) {
-            console.error('Could not upload EPC certificate')
-          } else {
-            certificatenStore.addCertificaat({
-              created_at: new Date(Date.now()),
-              naam: file.name,
-              size: file.size,
-              type: TypeKeuring.EPC,
-              keuringID: keuring
-            })
-          }
-        } else {
-          const { error } = await supabase.storage.from('certificaten').upload(`Asbest/${file.name}`, file)
-          if (error) {
-            console.error('Could not upload Asbest certificate')
-          } else {
-            certificatenStore.addCertificaat({
-              created_at: new Date(Date.now()),
-              naam: file.name,
-              size: file.size,
-              type: TypeKeuring.ASBEST,
-              keuringID: keuring
-            })
-          }
-        }
-      }
-    }
-  }
-
-  const removeCertificaat = async (event: Event, name: string, typeKeuring: TypeKeuring) => {
-    event.preventDefault()
-
-    const certificaat = certificatenStore.certificaten.find((cert) => cert.naam === name)
-
-    if (certificaat) {
-      if (typeKeuring === TypeKeuring.EPC) {
-        const { error } = await supabase.storage.from('certificaten').remove([`EPC/${certificaat.naam}`])
-        if (error) {
-          console.error(`Unable to remove ${certificaat.naam} from the storage`)
-        } else {
-          certificatenStore.removeCertificaat(name)
-        }
-      } else {
-        const { error } = await supabase.storage.from('certificaten').remove([`Asbest/${certificaat.naam}`])
-        if (error) {
-          console.error(`Unable to remove ${certificaat.naam} from the storage`)
-        } else {
-          certificatenStore.removeCertificaat(name)
-        }
-      }
-    }
-  }
-
   const uploadKeuring = async () => {
     const { data: uploadedKeuring } = await supabase
       .from('keuringen')
@@ -317,43 +242,19 @@
       .select('*, created_by: gebruikers!keuringen_created_by_fkey(*, organisatie: organisaties(*))')
       .single()
 
-    const { error: errorUploadedEPCCertificaat } = await supabase.from('certificaten').insert(
-      epc_certificaten.value.map((cert) => ({
-        name: cert.naam,
-        size: cert.size,
-        type: cert.type,
-        keuringID: uploadedKeuring.id
-      }))
-    )
+    if (extraDocumentenStore.extra_documenten) {
+      const { error: errorUploadedExtraDocument } = await supabase.from('extra_documenten').insert(
+        extraDocumentenStore.extra_documenten.map((extraDoc) => ({
+          naam: extraDoc.naam,
+          size: extraDoc.size,
+          type: extraDoc.type,
+          adres_ID: keuringForm.adresID
+        }))
+      )
 
-    if (errorUploadedEPCCertificaat) {
-      console.error('Could not upload EPC certificaat')
-    }
-
-    const { error: errorUploadedAsbestCertificaat } = await supabase.from('certificaten').insert(
-      asbest_certificaten.value.map((cert) => ({
-        name: cert.naam,
-        size: cert.size,
-        type: cert.type,
-        keuringID: uploadedKeuring.id
-      }))
-    )
-
-    if (errorUploadedAsbestCertificaat) {
-      console.error('Could not upload Asbest certificaat')
-    }
-
-    const { error: errorUploadedExtraDocument } = await supabase.from('extra_documenten').insert(
-      extraDocumentenStore.extra_documenten.map((extraDoc) => ({
-        naam: extraDoc.naam,
-        size: extraDoc.size,
-        type: extraDoc.type,
-        adres_ID: keuringForm.adresID
-      }))
-    )
-
-    if (errorUploadedExtraDocument) {
-      console.error('Could not store Extra Document')
+      if (errorUploadedExtraDocument) {
+        console.error('Could not store Extra Document')
+      }
     }
 
     if (uploadedKeuring) {
@@ -379,7 +280,6 @@
         asbest_toegewezen_aan: uploadedKeuring.asbest_toegewezen_aan
       })
 
-      certificatenStore.empty()
       extraDocumentenStore.empty()
 
       if (uploadedKeuring.epc_toegewezen_aan) {
@@ -518,7 +418,6 @@
   }
 
   const handleClick = () => {
-    certificatenStore.empty()
     extraDocumentenStore.empty()
     router.push('/keuringen')
   }
@@ -537,14 +436,8 @@
     keuringForm.adresID = ''
   }
 
-  const showCertificatenSubForm = () => {
-    isCertificatesUploaderVisible.value = true
-    isExtraDocsUploaderVisible.value = false
-  }
-
   const showExtraDocumentenSubForm = () => {
     isExtraDocsUploaderVisible.value = true
-    isCertificatesUploaderVisible.value = false
   }
 
   const handleConfirmEdit = async () => {
@@ -700,13 +593,13 @@
           <div class="toegang-eenheid text-base">
             <h3 class="text-base">Toegang tot eenheid</h3>
             <div class="text-sm">
-              <span class="rb-sleutels">
-                <input type="radio" name="toegangEenheid" id="te_immo" v-model="keuringForm.toegang_eenheid" :value="ToegangEenheid.SLEUTELS" />
-                <label for="te_immo">Sleutels ophalen (IMMO)</label>
-              </span>
               <span class="rb-klant">
                 <input type="radio" name="toegangEenheid" id="te_klant" v-model="keuringForm.toegang_eenheid" :value="ToegangEenheid.KLANT" />
-                <label for="te_klant">Afspreken met eigenaar</label>
+                <label for="te_klant">Afspreken met klant</label>
+              </span>
+              <span class="rb-sleutels">
+                <input type="radio" name="toegangEenheid" id="te_immo" v-model="keuringForm.toegang_eenheid" :value="ToegangEenheid.SLEUTELS" />
+                <label for="te_immo">Sleutels ophalen</label>
               </span>
               <span class="rb-sleutels">
                 <input type="radio" name="toegangEenheid" id="te_huurder" v-model="keuringForm.toegang_eenheid" :value="ToegangEenheid.HUURDER" />
@@ -786,21 +679,6 @@
             <Textarea class="text-sm" id="ta-opmerking" v-model="keuringForm.opmerking" placeholder="Opmerkingen"></Textarea>
           </div>
           <div class="uploader-wrapper">
-            <Button raised @click="showCertificatenSubForm" :disabled="!(keuringForm.adresID && keuringForm.klantID && keuringForm.type.length !== 0)">
-              <span class="text text-xs">
-                <Icon icon="mdi:certificate" width="20" />
-                Certificaten
-              </span>
-              <span v-if="keuringForm.type.length" class="text-xs">
-                <span class="amount" v-if="keuringForm.type.includes(TypeKeuring.EPC)">
-                  {{ epc_certificaten.length }}
-                </span>
-                <span class="amount" v-if="keuringForm.type.includes(TypeKeuring.EPC) && keuringForm.type.includes(TypeKeuring.ASBEST)"> | </span>
-                <span class="amount" v-if="keuringForm.type.includes(TypeKeuring.ASBEST)">
-                  {{ asbest_certificaten.length }}
-                </span>
-              </span>
-            </Button>
             <Button raised @click="showExtraDocumentenSubForm" :disabled="!(keuringForm.adresID && keuringForm.klantID && keuringForm.type.length !== 0)">
               <span class="text text-xs">
                 <Icon icon="mdi:file-document" width="20" />
@@ -821,7 +699,7 @@
       <WEVAddressForm v-if="isAddressSubFormVisible" @select-address="selectAddress" @close-sub-form="hideAddressSubForm" />
       <WEVClientForm v-if="isClientSubFormVisible" @select-client="selectClient" @close-sub-form="hideClientSubForm" />
     </div>
-    <div class="sub-form" v-if="isFacturatieSubFormVisible || isCertificatesUploaderVisible || isExtraDocsUploaderVisible">
+    <div class="sub-form" v-if="isFacturatieSubFormVisible || isExtraDocsUploaderVisible">
       <WEVFacturatieForm
         v-if="isFacturatieSubFormVisible"
         @select-facturatie="selectFacturatie"
@@ -831,13 +709,6 @@
         :form="keuringForm"
         :klanten="klantenStore.klanten"
         :adressen="adressenStore.adressen"
-      />
-      <WEVCertificatesForm
-        v-if="isCertificatesUploaderVisible"
-        :form="keuringForm"
-        @toggleSubForm="isCertificatesUploaderVisible = !isCertificatesUploaderVisible"
-        @uploadCertificaten="(event: Event, type: TypeKeuring, keuring: string) => uploadCertificaat(event, type, keuring)"
-        @removeCertificaat="(event: Event, name: string, type: TypeKeuring) => removeCertificaat(event, name, type)"
       />
       <WEVExtraDocsForm
         v-if="isExtraDocsUploaderVisible"

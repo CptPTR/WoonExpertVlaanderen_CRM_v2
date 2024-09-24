@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import SelectedFacturatie from '@/components/SelectedFacturatie.vue'
   import WEVAddressForm from '@/components/WEVAddressForm.vue'
   import WEVBackButton from '@/components/WEVBackButton.vue'
   import WEVCertificatesForm from '@/components/WEVCertificatesForm.vue'
@@ -31,7 +32,6 @@
   import { useToast } from 'primevue/usetoast'
   import { computed, onBeforeMount, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import SelectedFacturatie from '@/components/SelectedFacturatie.vue'
 
   const authStore = useAuthStore()
   const deskundigenStore = useDeskundigenStore()
