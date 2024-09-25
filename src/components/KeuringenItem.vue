@@ -126,7 +126,7 @@
 
 <style lang="scss" scoped>
   td {
-    padding: 15px 20px;
+    padding: 15px;
   }
 
   .naam,
