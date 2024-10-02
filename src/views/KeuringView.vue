@@ -5,6 +5,7 @@
   import { FacturatieBestemming } from '@/enums/modules/FacturatieBestemming'
   import { ToegangEenheid } from '@/enums/modules/ToegangEenheid'
   import { useAdressenStore } from '@/stores/adressenStore'
+  import { useAuthStore } from '@/stores/authStore'
   import { useCertificaatStore } from '@/stores/certificatenStore'
   import { useExtraDocumentStore } from '@/stores/extraDocumentenStore'
   import { useFacturatiesStore } from '@/stores/facturatiesStore'
@@ -24,6 +25,7 @@
   const router = useRouter()
   const paramId = route.params.id as string
 
+  const authStore = useAuthStore()
   const keuringenStore = useKeuringenStore()
   const extraDocumentenStore = useExtraDocumentStore()
   const certificatenStore = useCertificaatStore()
@@ -208,10 +210,13 @@
       </h1>
       <h1 v-else>loading keuring...</h1>
     </div>
-    <div class="badges">
-      <div class="info">
-        <span :title="`aangemaakt door ${keuring.created_by.organisatie.naam}`" class="badge created-by text-xs">
+    <div class="badges-actions">
+      <div class="badges">
+        <span :title="`aangemaakt door ${keuring.created_by.voornaam} ${keuring.created_by.achternaam} (${keuring.created_by.organisatie.naam})`" class="badge created-by text-xs">
           {{ keuring.created_by.organisatie.naam }}
+          <span v-if="keuring.created_by.id !== authStore.currentlyLoggedIn?.id && keuring.created_by.organisatie.naam !== 'WoonExpertVlaanderen'">{{
+            `: ${keuring.created_by.voornaam} ${keuring.created_by.achternaam}`
+          }}</span>
         </span>
         <span :title="keuring.toegang_eenheid" class="badge toegang-eenheid text-xs">
           <Icon :icon="iconToegangEenheid" width="20" color="#fff" />
@@ -397,12 +402,12 @@
     border-radius: 5px;
   }
 
-  .badges {
+  .badges-actions {
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    .info {
+    .badges {
       display: flex;
       gap: 5px;
 
@@ -445,6 +450,10 @@
       border-radius: 5px;
       cursor: pointer;
     }
+  }
+
+  .badges-info {
+    margin-top: 1rem;
   }
 
   .content {
