@@ -120,7 +120,7 @@
 
   watch(
     () => keuringForm.type,
-    (newType, oldType) => {
+    (newType) => {
       if (newType.includes(TypeKeuring.EPC)) {
         const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === process.env.DEFAULT_EPC)!
 

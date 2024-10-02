@@ -186,13 +186,6 @@
     return ''
   })
 
-  const isLessThanOneDayOld = (createdAt: string) => {
-    const now = new Date()
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-    const createdAtDate = new Date(createdAt)
-    return createdAtDate > twentyFourHoursAgo
-  }
-
   onMounted(async () => {
     keuring.value = keuringenStore.getKeuring(paramId)
 
