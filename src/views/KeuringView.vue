@@ -303,7 +303,6 @@
                 <div>
                   <span class="naam text-sm">
                     {{ certificaat.naam }}
-                    <!-- <p v-if="isLessThanOneDayOld(certificaat.created_at)" class="recent">Recent geüpload</p> -->
                   </span>
                   <span class="size text-xs"> ({{ formatFileSize(certificaat.size) }}) </span>
                 </div>
