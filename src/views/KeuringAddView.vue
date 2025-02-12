@@ -124,7 +124,7 @@
       if (newType.includes(TypeKeuring.EPC)) {
         const epcDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === process.env.DEFAULT_EPC)!
 
-        if (epcDeskundige.id) {
+        if (epcDeskundige.id && !keuringForm.epc_toegewezen_aan) {
           keuringForm.epc_toegewezen_aan = epcDeskundige.id
         }
       } else {
@@ -134,7 +134,7 @@
       if (newType.includes(TypeKeuring.ASBEST)) {
         const asbestDeskundige = deskundigenStore.deskundigen.find((d: Gebruiker) => d.email === process.env.DEFAULT_ASBEST)!
 
-        if (asbestDeskundige.id) {
+        if (asbestDeskundige.id && !keuringForm.asbest_toegewezen_aan) {
           keuringForm.asbest_toegewezen_aan = asbestDeskundige.id
         }
       } else {
