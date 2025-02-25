@@ -91,7 +91,7 @@
           <li class="text-sm">
             <Icon icon="mdi:certificate" />
 
-            {{ keuring.type.toUpperCase() }}
+            {{ keuring.type.join(' + ').toUpperCase() }}
           </li>
           <li class="text-sm">
             <Icon icon="mdi:label" />

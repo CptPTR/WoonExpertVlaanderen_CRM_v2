@@ -71,7 +71,7 @@
     {{ formatDate(keuring.datum_toewijzing) }}
   </td>
   <td v-if="keuring.type" class="text-sm">
-    {{ keuring.type.toUpperCase() }}
+    {{ keuring.type.join(' + ').toUpperCase() }}
   </td>
   <td class="klant" v-if="keuring.klantID">
     <span class="naam text-sm">
