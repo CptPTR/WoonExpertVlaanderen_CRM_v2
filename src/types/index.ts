@@ -43,7 +43,7 @@ export type Keuring = {
   facturatie_bestemming?: FacturatieBestemming
   status: Status
   toegang_eenheid: ToegangEenheid
-  type: TypeKeuring
+  type: TypeKeuring[]
   datum_toewijzing: Date
   datum_plaatsbezoek: Date | null
   created_by: Gebruiker

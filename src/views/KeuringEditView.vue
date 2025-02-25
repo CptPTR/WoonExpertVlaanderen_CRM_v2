@@ -71,6 +71,10 @@
     epc_toegewezen_aan: null,
     asbest_toegewezen_aan: null
   })
+  const originalEPCAssignment = ref<string>('')
+  const originalAsbestAssignment = ref<string>('')
+  const epcAssignmentChanged = ref<boolean>(false)
+  const asbestAssignmentChanged = ref<boolean>(false)
 
   const isCancelModalOpen = ref<boolean>(false)
   const isAddressSubFormVisible = ref<boolean>(false)
@@ -164,7 +168,7 @@
         keuringForm.facturatieID = data.facturatie_ID
         keuringForm.facturatie_bestemming = data.facturatie_bestemming
         keuringForm.opmerking = data.opmerking
-        keuringForm.datum_plaatsbezoek = data.datum_plaatsbezoek
+        keuringForm.datum_plaatsbezoek = data.datum_plaatsbezoek ? new Date(data.datum_plaatsbezoek) : null
         keuringForm.status = data.status
         keuringForm.created_by = {
           id: data.created_by.id,
@@ -181,10 +185,14 @@
             naam: data.created_by.organisatie.naam
           }
         }
-        ;(keuringForm.admin_event_ID = data.admin_event_ID), (keuringForm.event_ID = data.event_ID)
+        keuringForm.admin_event_ID = data.admin_event_ID
+        keuringForm.event_ID = data.event_ID
         keuringForm.asbest_event_ID = data.asbest_event_ID
         keuringForm.epc_toegewezen_aan = data.epc_toegewezen_aan
         keuringForm.asbest_toegewezen_aan = data.asbest_toegewezen_aan
+
+        originalEPCAssignment.value = data.epc_toegewezen_aan
+        originalAsbestAssignment.value = data.asbest_toegewezen_aan
       }
 
       const { data: certificatenData } = await supabase.from('certificaten').select('*').eq('keuringID', route.params.id)
@@ -447,7 +455,7 @@
     if (keuringClient.value) {
       if (keuring.datum_plaatsbezoek && keuringAddress.value && vlaamseStad.value) {
         const endTime = new Date(keuring.datum_plaatsbezoek)
-        endTime.setMinutes(keuring.datum_plaatsbezoek.getMinutes() + 45)
+        endTime.setMinutes(new Date(keuring.datum_plaatsbezoek).getMinutes() + 45)
 
         const event = {
           summary: `${keuringForm.type.join(' + ')} - ${keuringAddress.value.straatnaam} ${keuringAddress.value.nummer} ${
@@ -487,36 +495,97 @@
     }
   }
 
+  const deleteEventFromCalendar = async (eventId: string, calendar: string) => {
+    await axios.delete(`${process.env.BACKEND_BASE_URL}/calendars/${calendar}/events/${eventId}`)
+  }
+
+  watch(
+    () => keuringForm.epc_toegewezen_aan,
+    (newAssignment, oldAssignment) => {
+      if (oldAssignment) {
+        if (newAssignment === originalEPCAssignment.value) {
+          epcAssignmentChanged.value = false
+        }
+        if (newAssignment && newAssignment !== oldAssignment && newAssignment !== originalEPCAssignment.value) {
+          epcAssignmentChanged.value = true
+        }
+        if (!newAssignment) {
+          epcAssignmentChanged.value = true
+        }
+      }
+    }
+  )
+
+  watch(
+    () => keuringForm.asbest_toegewezen_aan,
+    (newAssignment, oldAssignment) => {
+      if (oldAssignment) {
+        if (newAssignment === originalAsbestAssignment.value) {
+          asbestAssignmentChanged.value = false
+        }
+        if (newAssignment && newAssignment !== oldAssignment && newAssignment !== originalAsbestAssignment.value) {
+          asbestAssignmentChanged.value = true
+        }
+        if (!newAssignment) {
+          asbestAssignmentChanged.value = true
+        }
+      }
+    }
+  )
+
   const submitForm = async (event: Event) => {
     event.preventDefault()
 
-    if (datum_plaatsbezoek_edited.value && keuringForm.datum_plaatsbezoek) {
-      const epcDeskundige = deskundigenStore.deskundigen.find((deskundige) => keuringForm.epc_toegewezen_aan === deskundige.id)!
-      const asbestDeskundige = deskundigenStore.deskundigen.find((deskundige) => keuringForm.asbest_toegewezen_aan === deskundige.id)!
-      const wevAdmin = deskundigenStore.deskundigen.find((deskundige) => deskundige.gebruikersnaam === process.env.WEV_ADMIN)!
+    const { deskundigen } = deskundigenStore
+    const epcDeskundige = deskundigen.find((deskundige) => keuringForm.epc_toegewezen_aan === deskundige.id)
+    const asbestDeskundige = deskundigen.find((deskundige) => keuringForm.asbest_toegewezen_aan === deskundige.id)
+    const wevAdmin = deskundigen.find((deskundige) => deskundige.gebruikersnaam === process.env.WEV_ADMIN)
 
-      if (keuringForm.admin_event_ID && (epcDeskundige?.gebruikersnaam !== wevAdmin.gebruikersnaam || asbestDeskundige?.gebruikersnaam !== wevAdmin.gebruikersnaam)) {
-        await editEventToDate(wevAdmin.gebruikersnaam, keuringForm.admin_event_ID, keuringForm.datum_plaatsbezoek)
-      } else {
-        if (epcDeskundige?.gebruikersnaam !== wevAdmin.gebruikersnaam) {
-          await addEventToCalendar(keuringForm, wevAdmin.gebruikersnaam)
+    if (datum_plaatsbezoek_edited.value) {
+      if (keuringForm.datum_plaatsbezoek) {
+        if (wevAdmin) {
+          if (epcDeskundige && epcDeskundige.gebruikersnaam !== wevAdmin.gebruikersnaam) {
+            if (keuringForm.event_ID) {
+              await editEventToDate(epcDeskundige.gebruikersnaam, keuringForm.event_ID, keuringForm.datum_plaatsbezoek)
+            } else {
+              await addEventToCalendar(keuringForm, epcDeskundige.gebruikersnaam, TypeKeuring.EPC)
+            }
+          }
+
+          if (asbestDeskundige) {
+            if (keuringForm.asbest_event_ID) {
+              await editEventToDate(asbestDeskundige.gebruikersnaam, keuringForm.asbest_event_ID, keuringForm.datum_plaatsbezoek)
+            } else {
+              await addEventToCalendar(keuringForm, asbestDeskundige.gebruikersnaam, TypeKeuring.ASBEST)
+            }
+          }
+
+          if (keuringForm.admin_event_ID) {
+            await editEventToDate(wevAdmin.gebruikersnaam, keuringForm.admin_event_ID, keuringForm.datum_plaatsbezoek)
+          } else {
+            await addEventToCalendar(keuringForm, wevAdmin.gebruikersnaam)
+          }
         }
       }
+    }
 
-      if (keuringForm.event_ID && keuringForm.epc_toegewezen_aan) {
-        await editEventToDate(epcDeskundige.gebruikersnaam, keuringForm.event_ID, keuringForm.datum_plaatsbezoek)
-      } else {
-        if (keuringForm.type.includes(TypeKeuring.EPC)) {
-          await addEventToCalendar(keuringForm, epcDeskundige.gebruikersnaam, TypeKeuring.EPC)
-        }
+    const originalAssignmentEPCDeskundige = deskundigen.find((deskundige) => originalEPCAssignment.value === deskundige.id)
+    if (epcAssignmentChanged.value && epcDeskundige) {
+      if (keuringForm.event_ID && originalAssignmentEPCDeskundige && originalAssignmentEPCDeskundige !== wevAdmin) {
+        await deleteEventFromCalendar(keuringForm.event_ID, originalAssignmentEPCDeskundige.gebruikersnaam)
       }
+      if (epcDeskundige.gebruikersnaam !== wevAdmin?.gebruikersnaam) {
+        await addEventToCalendar(keuringForm, epcDeskundige.gebruikersnaam, TypeKeuring.EPC)
+      }
+    }
 
-      if (keuringForm.asbest_event_ID && keuringForm.asbest_toegewezen_aan) {
-        await editEventToDate(asbestDeskundige.gebruikersnaam, keuringForm.asbest_event_ID, keuringForm.datum_plaatsbezoek)
-      } else {
-        if (keuringForm.type.includes(TypeKeuring.ASBEST)) {
-          await addEventToCalendar(keuringForm, asbestDeskundige.gebruikersnaam, TypeKeuring.ASBEST)
-        }
+    const originalAssignmentAsbestDeskundige = deskundigen.find((deskundige) => originalAsbestAssignment.value === deskundige.id)
+    if (asbestAssignmentChanged.value && asbestDeskundige) {
+      if (keuringForm.event_ID && originalAssignmentAsbestDeskundige && originalAssignmentAsbestDeskundige !== wevAdmin) {
+        await deleteEventFromCalendar(keuringForm.event_ID, originalAssignmentAsbestDeskundige.gebruikersnaam)
+      }
+      if (asbestDeskundige.gebruikersnaam !== wevAdmin?.gebruikersnaam) {
+        await addEventToCalendar(keuringForm, asbestDeskundige.gebruikersnaam, TypeKeuring.ASBEST)
       }
     }
 
