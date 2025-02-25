@@ -22,6 +22,7 @@
   import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
   import type { FormKeuring, Gebruiker } from '@/types'
   import { Icon } from '@iconify/vue'
+  import type { StorageError } from '@supabase/storage-js'
   import 'add-to-calendar-button'
   import axios from 'axios'
   import { gsap } from 'gsap'
@@ -291,13 +292,16 @@
 
       for (const file of fileListArray) {
         if (typeKeuring === TypeKeuring.EPC) {
-          const { error } = await supabase.storage.from('certificaten').upload(`EPC/${file.name}`, file)
+          const { data, error }: { data: any | null; error: StorageError | null } = await supabase.storage.from('certificaten').upload(`EPC/${file.name}`, file)
 
           if (error) {
             console.error('Could not upload EPC certificate')
-          } else {
+          }
+
+          if (data) {
             certificatenStore.addCertificaat({
               created_at: new Date(Date.now()),
+              id: data.id,
               naam: file.name,
               size: file.size,
               type: TypeKeuring.EPC,
@@ -319,12 +323,15 @@
             certificateFilesAdded.value++
           }
         } else {
-          const { error } = await supabase.storage.from('certificaten').upload(`Asbest/${file.name}`, file)
+          const { data, error }: { data: any | null; error: StorageError | null } = await supabase.storage.from('certificaten').upload(`Asbest/${file.name}`, file)
           if (error) {
             console.error('Could not upload Asbest certificate')
-          } else {
+          }
+
+          if (data) {
             certificatenStore.addCertificaat({
               created_at: new Date(Date.now()),
+              id: data.id,
               naam: file.name,
               size: file.size,
               type: TypeKeuring.ASBEST,
@@ -354,6 +361,7 @@
     event.preventDefault()
 
     const certificaat = certificatenStore.certificaten.find((cert) => cert.id === id)
+    console.log('certificaat: ', certificaat)
 
     if (certificaat) {
       if (typeKeuring === TypeKeuring.EPC) {
