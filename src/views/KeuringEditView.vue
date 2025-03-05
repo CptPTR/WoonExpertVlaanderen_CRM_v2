@@ -84,6 +84,8 @@
   const isCertificatesUploaderVisible = ref<boolean>(false)
   const isExtraDocsUploaderVisible = ref<boolean>(false)
 
+  const loadingEditingKeuring = ref<boolean>(false)
+
   const showAddressSubForm = () => {
     isClientSubFormVisible.value = false
     isAddressSubFormVisible.value = true
@@ -605,6 +607,8 @@
   }
 
   const updateKeuring = async () => {
+    loadingEditingKeuring.value = true
+
     const { data: updatedKeuring } = await supabase
       .from('keuringen')
       .update({
@@ -635,7 +639,6 @@
       .single()
 
     if (updatedKeuring) {
-      toast.add({ severity: 'success', detail: `Keuring gewijzigd!`, group: 'br', life: 5000 })
       const k = {
         id: updatedKeuring.id,
         klantID: updatedKeuring.klant_ID,
@@ -659,7 +662,12 @@
 
       certificatenStore.empty()
       extraDocumentenStore.empty()
-      router.push('/keuringen')
+
+      setTimeout(() => {
+        loadingEditingKeuring.value = false
+        toast.add({ severity: 'success', detail: `Keuring gewijzigd!`, group: 'br', life: 5000 })
+        router.push('/keuringen')
+      }, 1500)
     }
   }
 
@@ -900,7 +908,6 @@
             />
           </div>
         </div>
-
         <div class="column">
           <div class="facturatie-wrapper">
             <h3 class="text-base">Facturatie</h3>
@@ -980,15 +987,18 @@
           </div>
         </div>
       </div>
-
       <div class="actions">
-        <Button type="button" raised severity="danger" @click="handleFormClose" class="text-xs">Annuleer</Button>
-        <Button type="submit" raised class="text-xs">Wijzig keuring</Button>
+        <Button type="button" raised severity="danger" @click="handleFormClose" class="text-xs" :disabled="loadingEditingKeuring">Annuleer</Button>
+        <Button type="submit" raised class="text-xs" :disabled="loadingEditingKeuring">Wijzig keuring</Button>
         <WEVCancelModal :isOpen="isCancelModalOpen" @closeWindow="isCancelModalOpen = false" @confirm="handleDialogClick" />
       </div>
     </form>
     <div class="loading" v-else>
       <p>Keuring aan het laden<span>.</span><span>.</span><span>.</span></p>
+    </div>
+    <div class="loadingEdit" v-if="loadingEditingKeuring">
+      <Icon icon="mdi:loading" />
+      <p>Keuring aan het aanpassen</p>
     </div>
     <div class="sub-form" v-if="isAddressSubFormVisible || isClientSubFormVisible">
       <WEVAddressForm v-if="isAddressSubFormVisible" :form="keuringForm" @select-address="selectAddress" @close-sub-form="hideAddressSubForm" />
@@ -1024,12 +1034,45 @@
 </template>
 
 <style lang="scss" scoped>
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   .edit-keuring {
     display: flex;
     flex-direction: column;
     font-family: 'Rubik', sans-serif;
     max-width: 1350px;
     margin: auto;
+  }
+
+  .loadingEdit {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    background-color: rgba(255, 255, 255, 0.9);
+
+    svg {
+      font-size: 5rem;
+      display: flex;
+      animation: spin 1.5s infinite cubic-bezier(0.6, 0.05, 0.28, 0.91);
+    }
+
+    p {
+      font-weight: 500;
+    }
   }
 
   .title {

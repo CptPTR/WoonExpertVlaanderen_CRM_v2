@@ -88,6 +88,8 @@
   const isFacturatieSubFormVisible = ref<boolean>(false)
   const isExtraDocsUploaderVisible = ref<boolean>(false)
 
+  const loadingUploadingKeuring = ref<boolean>(false)
+
   const showAddressSubForm = () => {
     isClientSubFormVisible.value = false
     isAddressSubFormVisible.value = true
@@ -212,6 +214,8 @@
   }
 
   const uploadKeuring = async () => {
+    loadingUploadingKeuring.value = true
+
     const { data: uploadedKeuring } = await supabase
       .from('keuringen')
       .insert([
@@ -258,8 +262,6 @@
     }
 
     if (uploadedKeuring) {
-      toast.add({ severity: 'success', summary: 'Keuring succesvol aangemaakt!', group: 'br', life: 5000 })
-
       keuringenStore.addKeuring({
         id: uploadedKeuring.id,
         klantID: uploadedKeuring.klant_ID,
@@ -313,7 +315,11 @@
         `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
       )
 
-      router.push('/keuringen')
+      setTimeout(() => {
+        loadingUploadingKeuring.value = false
+        toast.add({ severity: 'success', summary: 'Keuring succesvol aangemaakt!', group: 'br', life: 5000 })
+        router.push('/keuringen')
+      }, 1500)
     }
   }
 
@@ -690,11 +696,15 @@
         </div>
       </div>
       <div class="actions">
-        <Button type="button" raised severity="danger" @click="isCancelModalOpen = true" class="text-xs">Annuleer</Button>
-        <Button type="submit" raised severity="success" class="text-xs">Voeg keuring toe</Button>
+        <Button type="button" raised severity="danger" @click="isCancelModalOpen = true" class="text-xs" :disabled="loadingUploadingKeuring">Annuleer</Button>
+        <Button type="submit" raised severity="success" class="text-xs" :disabled="loadingUploadingKeuring">Voeg keuring toe</Button>
         <WEVCancelCreationKeuring :isOpen="isCancelModalOpen" @closeWindow="isCancelModalOpen = false" @confirm="handleConfirm" />
       </div>
     </form>
+    <div class="loadingUpload" v-if="loadingUploadingKeuring">
+      <Icon icon="mdi:loading" />
+      <p>Keuring aan het uploaden</p>
+    </div>
     <div class="sub-form" v-if="isAddressSubFormVisible || isClientSubFormVisible">
       <WEVAddressForm v-if="isAddressSubFormVisible" @select-address="selectAddress" @close-sub-form="hideAddressSubForm" />
       <WEVClientForm v-if="isClientSubFormVisible" @select-client="selectClient" @close-sub-form="hideClientSubForm" />
@@ -722,6 +732,39 @@
 </template>
 
 <style lang="scss" scoped>
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .loadingUpload {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    background-color: rgba(255, 255, 255, 0.9);
+
+    svg {
+      font-size: 5rem;
+      display: flex;
+      animation: spin 1.5s infinite cubic-bezier(0.6, 0.05, 0.28, 0.91);
+    }
+
+    p {
+      font-weight: 500;
+    }
+  }
+
   .add-keuring {
     display: flex;
     flex-direction: column;
