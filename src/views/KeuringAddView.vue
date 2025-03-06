@@ -70,9 +70,11 @@
         id: authStore.currentlyLoggedIn?.organisatie.id as string,
         naam: authStore.currentlyLoggedIn?.organisatie.naam as string
       },
-      avatar: authStore.currentlyLoggedIn?.avatar as string
+      avatar: authStore.currentlyLoggedIn?.avatar as string,
+      isAdmin: authStore.currentlyLoggedIn?.isAdmin as boolean
     },
     admin_event_ID: null,
+    admin2_event_ID: null,
     event_ID: null,
     asbest_event_ID: null,
     epc_toegewezen_aan: null,
@@ -237,6 +239,7 @@
           toegang_eenheid: keuringForm.toegang_eenheid,
           datum_plaatsbezoek: keuringForm.datum_plaatsbezoek,
           admin_event_ID: keuringForm.admin_event_ID,
+          admin2_event_ID: keuringForm.admin2_event_ID,
           event_ID: keuringForm.event_ID,
           asbest_event_ID: keuringForm.asbest_event_ID,
           epc_toegewezen_aan: keuringForm.epc_toegewezen_aan,
@@ -276,6 +279,7 @@
         opmerking: uploadedKeuring.opmerking,
         facturatieID: uploadedKeuring.facturatie_ID,
         admin_event_ID: uploadedKeuring.admin_event_ID,
+        admin2_event_ID: uploadedKeuring.admin2_event_ID,
         event_ID: uploadedKeuring.event_ID,
         asbest_event_ID: uploadedKeuring.asbest_event_ID,
         epc_toegewezen_aan: uploadedKeuring.epc_toegewezen_aan,
@@ -285,7 +289,9 @@
       extraDocumentenStore.empty()
 
       if (uploadedKeuring.epc_toegewezen_aan) {
-        const epcDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.epc_toegewezen_aan === deskundige.id && deskundige.email !== process.env.ADMIN_MAIL)!
+        const epcDeskundigen = deskundigenStore.deskundigen.filter(
+          (deskundige) => uploadedKeuring.epc_toegewezen_aan === deskundige.id && deskundige.email !== (process.env.ADMIN_MAIL || process.env.ADMIN2_MAIL)
+        )!
         epcDeskundigen.map(async (deskundige) => {
           await sendMail(
             deskundige.email,
@@ -297,7 +303,9 @@
       }
 
       if (uploadedKeuring.asbest_toegewezen_aan && uploadedKeuring.asbest_toegewezen_aan !== uploadedKeuring.epc_toegewezen_aan) {
-        const asbestDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.asbest_toegewezen_aan === deskundige.id && deskundige.email !== process.env.ADMIN_MAIL)!
+        const asbestDeskundigen = deskundigenStore.deskundigen.filter(
+          (deskundige) => uploadedKeuring.asbest_toegewezen_aan === deskundige.id && deskundige.email !== (process.env.ADMIN_MAIL || process.env.ADMIN2_MAIL)
+        )!
         asbestDeskundigen.map(async (deskundige) => {
           await sendMail(
             deskundige.email,
@@ -308,11 +316,17 @@
         })
       }
 
-      await sendMail(
-        `${process.env.ADMIN_MAIL}`,
-        `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
-        uploadedKeuring.type,
-        `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
+      const recipients = [process.env.ADMIN_MAIL, process.env.ADMIN2_MAIL].filter(Boolean) as string[]
+
+      await Promise.all(
+        recipients.map((recipient) => {
+          sendMail(
+            recipient,
+            `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
+            uploadedKeuring.type,
+            `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
+          )
+        })
       )
 
       setTimeout(() => {
@@ -356,7 +370,7 @@
           end: endTime
         }
         const eventReceivingDeskundigen = deskundigenStore.deskundigen.filter(
-          (deskundige) => deskundige.gebruikersnaam === process.env.WEV_ADMIN || deskundige.id === keuringForm.epc_toegewezen_aan || deskundige.id === keuringForm.asbest_toegewezen_aan
+          (deskundige) => deskundige.isAdmin || deskundige.id === keuringForm.epc_toegewezen_aan || deskundige.id === keuringForm.asbest_toegewezen_aan
         )
         for (const deskundige of eventReceivingDeskundigen) {
           try {
@@ -369,6 +383,9 @@
             })
             if (deskundige.gebruikersnaam === process.env.WEV_ADMIN && deskundige.id !== keuringForm.epc_toegewezen_aan) {
               keuringForm.admin_event_ID = response.data
+            }
+            if (deskundige.gebruikersnaam === process.env.WEV_ADMIN2 && deskundige.id !== keuringForm.epc_toegewezen_aan) {
+              keuringForm.admin2_event_ID = response.data
             }
             if (deskundige.id === keuringForm.epc_toegewezen_aan) {
               keuringForm.event_ID = response.data

@@ -65,6 +65,11 @@
           await axios.delete(`${process.env.BACKEND_BASE_URL}/calendars/${wevAdmin.gebruikersnaam}/events/${keuringToDelete.admin_event_ID}`)
         }
 
+        if (keuringToDelete.admin2_event_ID) {
+          const wevAdmin2 = deskundigeStore.deskundigen.find((deskundige) => deskundige.gebruikersnaam === process.env.WEV_ADMIN2)!
+          await axios.delete(`${process.env.BACKEND_BASE_URL}/calendars/${wevAdmin2.gebruikersnaam}/events/${keuringToDelete.admin2_event_ID}`)
+        }
+
         if (keuringToDelete.event_ID && keuringToDelete.epc_toegewezen_aan) {
           const epcDeskundige = deskundigeStore.deskundigen.find((deskundige) => keuringToDelete.epc_toegewezen_aan === deskundige.id)!
           await axios.delete(`${process.env.BACKEND_BASE_URL}/calendars/${epcDeskundige.gebruikersnaam}/events/${keuringToDelete.event_ID}`)

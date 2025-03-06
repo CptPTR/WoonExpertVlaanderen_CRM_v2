@@ -7,15 +7,15 @@ import { useKeuringenStore } from '@/stores/keuringenStore'
 import { useKlantenStore } from '@/stores/klantenStore'
 import { useVlaamseStedenStore } from '@/stores/vlaamseStedenStore'
 import type { Adres, Facturatie, Klant } from '@/types'
+import KeuringAddView from '@/views/KeuringAddView.vue'
+import KeuringEditView from '@/views/KeuringEditView.vue'
+import KeuringView from '@/views/KeuringView.vue'
+import KeuringenView from '@/views/KeuringenView.vue'
+import LoginView from '@/views/LoginView.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 import ResetPasswordRequestView from '@/views/ResetPasswordRequest.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import { createRouter, createWebHistory, type NavigationGuard } from 'vue-router'
-import KeuringAddView from '../views/KeuringAddView.vue'
-import KeuringEditView from '../views/KeuringEditView.vue'
-import KeuringView from '../views/KeuringView.vue'
-import KeuringenView from '../views/KeuringenView.vue'
-import LoginView from '../views/LoginView.vue'
 
 const checkSession: NavigationGuard = async (to, _, next) => {
   const {
@@ -54,7 +54,8 @@ const getDeskundigenData = async () => {
         avatar: deskundige.avatar,
         rol: deskundige.rol,
         specialisatie: deskundige.specialisatie,
-        organisatie: deskundige.organisatieID
+        organisatie: deskundige.organisatieID,
+        isAdmin: deskundige.is_admin
       })
     })
   }
@@ -82,6 +83,7 @@ const getKeuringData = async () => {
         opmerking: keuring.opmerking,
         facturatie_bestemming: keuring.facturatie_bestemming,
         admin_event_ID: keuring.admin_event_ID,
+        admin2_event_ID: keuring.admin2_event_ID,
         event_ID: keuring.event_ID,
         asbest_event_ID: keuring.asbest_event_ID,
         epc_toegewezen_aan: keuring.epc_toegewezen_aan,
@@ -298,7 +300,8 @@ router.beforeEach(async (to) => {
           id: gebruikerData.organisatie.id,
           naam: gebruikerData.organisatie.naam
         },
-        avatar: gebruikerData.avatar
+        avatar: gebruikerData.avatar,
+        isAdmin: gebruikerData.is_admin
       })
     }
   }

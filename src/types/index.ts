@@ -1,8 +1,8 @@
 import type { FacturatieBestemming } from '@/enums/modules/FacturatieBestemming'
 import type { Rol } from '@/enums/modules/Rol'
+import type { Status } from '@/enums/modules/Status'
 import type { ToegangEenheid } from '@/enums/modules/ToegangEenheid'
-import { Status } from '../enums/modules/Status'
-import type { TypeKeuring } from '../enums/modules/TypeKeuring'
+import type { TypeKeuring } from '@/enums/modules/TypeKeuring'
 
 export type Notificatie = {
   message: string
@@ -53,6 +53,7 @@ export type Keuring = {
   extra_documenten?: ExtraDocument[]
   opmerking: string
   admin_event_ID: string | null
+  admin2_event_ID: string | null
   event_ID: string | null
   asbest_event_ID: string | null
   epc_toegewezen_aan: string | null
@@ -70,6 +71,7 @@ export type Gebruiker = {
   rol: Rol
   organisatie: Organisatie
   avatar: string
+  isAdmin: boolean
 }
 
 export type Organisatie = {
@@ -126,6 +128,7 @@ export type FormKeuring = {
   extra_documenten: ExtraDocument[]
   created_by: Gebruiker | null
   admin_event_ID: string | null
+  admin2_event_ID: string | null
   event_ID: string | null
   asbest_event_ID: string | null
   epc_toegewezen_aan: string | null

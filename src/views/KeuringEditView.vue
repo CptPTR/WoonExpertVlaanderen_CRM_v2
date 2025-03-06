@@ -67,6 +67,7 @@
     extra_documenten: [],
     created_by: null,
     admin_event_ID: null,
+    admin2_event_ID: null,
     event_ID: null,
     asbest_event_ID: null,
     epc_toegewezen_aan: null,
@@ -186,9 +187,11 @@
           organisatie: {
             id: data.created_by.organisatie.id,
             naam: data.created_by.organisatie.naam
-          }
+          },
+          isAdmin: data.created_by.is_admin
         }
         keuringForm.admin_event_ID = data.admin_event_ID
+        keuringForm.admin2_event_ID = data.admin2_event_ID
         keuringForm.event_ID = data.event_ID
         keuringForm.asbest_event_ID = data.asbest_event_ID
         keuringForm.epc_toegewezen_aan = data.epc_toegewezen_aan
@@ -496,7 +499,12 @@
             keuringForm.asbest_event_ID = response.data
           }
           if (!type) {
-            keuringForm.admin_event_ID = response.data
+            if (to === process.env.WEV_ADMIN) {
+              keuringForm.admin_event_ID = response.data
+            }
+            if (to === process.env.WEV_ADMIN2) {
+              keuringForm.admin2_event_ID = response.data
+            }
           }
         } catch (error) {
           console.error(error)
@@ -549,12 +557,14 @@
     const { deskundigen } = deskundigenStore
     const epcDeskundige = deskundigen.find((deskundige) => keuringForm.epc_toegewezen_aan === deskundige.id)
     const asbestDeskundige = deskundigen.find((deskundige) => keuringForm.asbest_toegewezen_aan === deskundige.id)
-    const wevAdmin = deskundigen.find((deskundige) => deskundige.gebruikersnaam === process.env.WEV_ADMIN)
+    // const wevAdmin = deskundigen.find((deskundige) => deskundige.gebruikersnaam === process.env.WEV_ADMIN)
+    const wevAdmins = deskundigen.filter((deskundige) => deskundige.isAdmin)
 
     if (datum_plaatsbezoek_edited.value) {
       if (keuringForm.datum_plaatsbezoek) {
-        if (wevAdmin) {
-          if (epcDeskundige && epcDeskundige.gebruikersnaam !== wevAdmin.gebruikersnaam) {
+        if (wevAdmins) {
+          // if (epcDeskundige && epcDeskundige.gebruikersnaam !== wevAdmin.gebruikersnaam) {
+          if (epcDeskundige && !wevAdmins.map((admin) => admin.id).includes(epcDeskundige.id)) {
             if (keuringForm.event_ID) {
               await editEventToDate(epcDeskundige.gebruikersnaam, keuringForm.event_ID, keuringForm.datum_plaatsbezoek)
             } else {
@@ -570,10 +580,27 @@
             }
           }
 
-          if (keuringForm.admin_event_ID) {
-            await editEventToDate(wevAdmin.gebruikersnaam, keuringForm.admin_event_ID, keuringForm.datum_plaatsbezoek)
-          } else {
-            await addEventToCalendar(keuringForm, wevAdmin.gebruikersnaam)
+          for (const admin of wevAdmins) {
+            const { gebruikersnaam } = admin
+
+            if (gebruikersnaam === process.env.WEV_ADMIN) {
+              const eventID = keuringForm.admin_event_ID
+
+              if (eventID) {
+                await editEventToDate(gebruikersnaam, eventID, keuringForm.datum_plaatsbezoek)
+              } else {
+                await addEventToCalendar(keuringForm, gebruikersnaam)
+              }
+            }
+            if (gebruikersnaam === process.env.WEV_ADMIN2) {
+              const eventID = keuringForm.admin2_event_ID
+
+              if (eventID) {
+                await editEventToDate(gebruikersnaam, eventID, keuringForm.datum_plaatsbezoek)
+              } else {
+                await addEventToCalendar(keuringForm, gebruikersnaam)
+              }
+            }
           }
         }
       }
@@ -581,20 +608,24 @@
 
     const originalAssignmentEPCDeskundige = deskundigen.find((deskundige) => originalEPCAssignment.value === deskundige.id)
     if (epcAssignmentChanged.value && epcDeskundige) {
-      if (keuringForm.event_ID && originalAssignmentEPCDeskundige && originalAssignmentEPCDeskundige !== wevAdmin) {
+      // if (keuringForm.event_ID && originalAssignmentEPCDeskundige && originalAssignmentEPCDeskundige !== wevAdmin) {
+      if (keuringForm.event_ID && originalAssignmentEPCDeskundige && !wevAdmins.map((admin) => admin.id).includes(originalAssignmentEPCDeskundige.id)) {
         await deleteEventFromCalendar(keuringForm.event_ID, originalAssignmentEPCDeskundige.gebruikersnaam)
       }
-      if (epcDeskundige.gebruikersnaam !== wevAdmin?.gebruikersnaam) {
+      // if (epcDeskundige.gebruikersnaam !== wevAdmin?.gebruikersnaam) {
+      if (!wevAdmins.map((admin) => admin.id).includes(epcDeskundige.id)) {
         await addEventToCalendar(keuringForm, epcDeskundige.gebruikersnaam, TypeKeuring.EPC)
       }
     }
 
     const originalAssignmentAsbestDeskundige = deskundigen.find((deskundige) => originalAsbestAssignment.value === deskundige.id)
     if (asbestAssignmentChanged.value && asbestDeskundige) {
-      if (keuringForm.event_ID && originalAssignmentAsbestDeskundige && originalAssignmentAsbestDeskundige !== wevAdmin) {
+      // if (keuringForm.event_ID && originalAssignmentAsbestDeskundige && originalAssignmentAsbestDeskundige !== wevAdmin) {
+      if (keuringForm.event_ID && originalAssignmentAsbestDeskundige && !wevAdmins.map((admin) => admin.id).includes(originalAssignmentAsbestDeskundige.id)) {
         await deleteEventFromCalendar(keuringForm.event_ID, originalAssignmentAsbestDeskundige.gebruikersnaam)
       }
-      if (asbestDeskundige.gebruikersnaam !== wevAdmin?.gebruikersnaam) {
+      // if (asbestDeskundige.gebruikersnaam !== wevAdmin?.gebruikersnaam) {
+      if (!wevAdmins.map((admin) => admin.id).includes(asbestDeskundige.id)) {
         await addEventToCalendar(keuringForm, asbestDeskundige.gebruikersnaam, TypeKeuring.ASBEST)
       }
     }
@@ -629,6 +660,7 @@
         facturatie_ID: keuringForm.facturatieID,
         facturatie_bestemming: keuringForm.facturatie_bestemming,
         admin_event_ID: keuringForm.admin_event_ID,
+        admin2_event_ID: keuringForm.admin2_event_ID,
         event_ID: keuringForm.event_ID,
         asbest_event_ID: keuringForm.asbest_event_ID,
         epc_toegewezen_aan: keuringForm.epc_toegewezen_aan,
@@ -653,6 +685,7 @@
         opmerking: updatedKeuring.opmerking,
         facturatieID: updatedKeuring.facturatie_ID,
         admin_event_ID: updatedKeuring.admin_event_ID,
+        admin2_event_ID: updatedKeuring.admin2_event_ID,
         event_ID: updatedKeuring.event_ID,
         asbest_event_ID: updatedKeuring.asbest_event_ID,
         epc_toegewezen_aan: updatedKeuring.epc_toegewezen_aan,
