@@ -289,9 +289,7 @@
       extraDocumentenStore.empty()
 
       if (uploadedKeuring.epc_toegewezen_aan) {
-        const epcDeskundigen = deskundigenStore.deskundigen.filter(
-          (deskundige) => uploadedKeuring.epc_toegewezen_aan === deskundige.id && deskundige.email !== (process.env.ADMIN_MAIL || process.env.ADMIN2_MAIL)
-        )!
+        const epcDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.epc_toegewezen_aan === deskundige.id && !deskundige.isAdmin)!
         epcDeskundigen.map(async (deskundige) => {
           await sendMail(
             deskundige.email,
@@ -303,9 +301,7 @@
       }
 
       if (uploadedKeuring.asbest_toegewezen_aan && uploadedKeuring.asbest_toegewezen_aan !== uploadedKeuring.epc_toegewezen_aan) {
-        const asbestDeskundigen = deskundigenStore.deskundigen.filter(
-          (deskundige) => uploadedKeuring.asbest_toegewezen_aan === deskundige.id && deskundige.email !== (process.env.ADMIN_MAIL || process.env.ADMIN2_MAIL)
-        )!
+        const asbestDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.asbest_toegewezen_aan === deskundige.id && !deskundige.isAdmin)!
         asbestDeskundigen.map(async (deskundige) => {
           await sendMail(
             deskundige.email,
@@ -316,12 +312,12 @@
         })
       }
 
-      const recipients = [process.env.ADMIN_MAIL, process.env.ADMIN2_MAIL].filter(Boolean) as string[]
+      const recipients = deskundigenStore.deskundigen.filter((deskundige) => deskundige.isAdmin)
 
       await Promise.all(
         recipients.map((recipient) => {
           sendMail(
-            recipient,
+            recipient.email,
             `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
             uploadedKeuring.type,
             `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`

@@ -13,7 +13,7 @@ export default defineConfig({
         }
       }
     }),
-    EnvironmentPlugin(['APP_SUPABASE_URL', 'APP_ANON_KEY', 'FRONTEND_BASE_URL', 'BACKEND_BASE_URL', 'ADMIN_MAIL', 'ADMIN2_MAIL', 'DEFAULT_EPC', 'DEFAULT_ASBEST', 'WEV_ADMIN', 'WEV_ADMIN2'])
+    EnvironmentPlugin(['APP_SUPABASE_URL', 'APP_ANON_KEY', 'FRONTEND_BASE_URL', 'BACKEND_BASE_URL', 'DEFAULT_EPC', 'DEFAULT_ASBEST'])
   ],
   resolve: {
     alias: {
