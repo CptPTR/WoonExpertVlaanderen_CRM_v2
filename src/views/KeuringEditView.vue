@@ -61,7 +61,7 @@
     status: Status.NIEUW,
     opmerking: '',
     toegang_eenheid: ToegangEenheid.KLANT,
-    datum_plaatsbezoek: new Date(),
+    datum_plaatsbezoek: null,
     epc_certificaten: [],
     asbest_certificaten: [],
     extra_documenten: [],
@@ -86,6 +86,8 @@
   const isExtraDocsUploaderVisible = ref<boolean>(false)
 
   const loadingEditingKeuring = ref<boolean>(false)
+
+  const originalDatePlaatsbezoek = ref<Date | null>(null)
 
   const showAddressSubForm = () => {
     isClientSubFormVisible.value = false
@@ -199,6 +201,8 @@
 
         originalEPCAssignment.value = data.epc_toegewezen_aan
         originalAsbestAssignment.value = data.asbest_toegewezen_aan
+
+        originalDatePlaatsbezoek.value = data.datum_plaatsbezoek ? new Date(data.datum_plaatsbezoek) : null
       }
 
       const { data: certificatenData } = await supabase.from('certificaten').select('*').eq('keuringID', route.params.id)
@@ -277,9 +281,18 @@
     keuringForm.status = Status.NIEUW
   }
 
-  const handleDateClick = () => {
-    datum_plaatsbezoek_edited.value = true
-    keuringForm.status = Status.INGEPLAND
+  const handleDateClick = (newDate: Date | null) => {
+    if (originalDatePlaatsbezoek.value?.getTime() === newDate?.getTime()) {
+      datum_plaatsbezoek_edited.value = false
+    } else {
+      datum_plaatsbezoek_edited.value = true
+    }
+
+    if (newDate) {
+      keuringForm.status = Status.INGEPLAND
+    } else {
+      keuringForm.status = Status.NIEUW
+    }
   }
 
   const epc_certificaten = computed(() => {
@@ -557,74 +570,69 @@
     const { deskundigen } = deskundigenStore
     const epcDeskundige = deskundigen.find((deskundige) => keuringForm.epc_toegewezen_aan === deskundige.id)
     const asbestDeskundige = deskundigen.find((deskundige) => keuringForm.asbest_toegewezen_aan === deskundige.id)
-    // const wevAdmin = deskundigen.find((deskundige) => deskundige.gebruikersnaam === process.env.WEV_ADMIN)
     const wevAdmins = deskundigen.filter((deskundige) => deskundige.isAdmin)
 
-    if (datum_plaatsbezoek_edited.value) {
-      if (keuringForm.datum_plaatsbezoek) {
-        if (wevAdmins) {
-          // if (epcDeskundige && epcDeskundige.gebruikersnaam !== wevAdmin.gebruikersnaam) {
-          if (epcDeskundige && !wevAdmins.map((admin) => admin.id).includes(epcDeskundige.id)) {
-            if (keuringForm.event_ID) {
-              await editEventToDate(epcDeskundige.gebruikersnaam, keuringForm.event_ID, keuringForm.datum_plaatsbezoek)
-            } else {
-              await addEventToCalendar(keuringForm, epcDeskundige.gebruikersnaam, TypeKeuring.EPC)
-            }
+    if (datum_plaatsbezoek_edited.value && keuringForm.datum_plaatsbezoek && wevAdmins) {
+      if (epcDeskundige && !epcDeskundige.isAdmin) {
+        if (keuringForm.event_ID) {
+          await editEventToDate(epcDeskundige.gebruikersnaam, keuringForm.event_ID, keuringForm.datum_plaatsbezoek)
+        } else {
+          await addEventToCalendar(keuringForm, epcDeskundige.gebruikersnaam, TypeKeuring.EPC)
+        }
+      }
+
+      if (asbestDeskundige) {
+        if (keuringForm.asbest_event_ID) {
+          await editEventToDate(asbestDeskundige.gebruikersnaam, keuringForm.asbest_event_ID, keuringForm.datum_plaatsbezoek)
+        } else {
+          await addEventToCalendar(keuringForm, asbestDeskundige.gebruikersnaam, TypeKeuring.ASBEST)
+        }
+      }
+
+      for (const admin of wevAdmins) {
+        const { gebruikersnaam } = admin
+
+        if (gebruikersnaam === process.env.WEV_ADMIN) {
+          const eventID = keuringForm.admin_event_ID
+
+          if (eventID) {
+            await editEventToDate(gebruikersnaam, eventID, keuringForm.datum_plaatsbezoek)
+          } else {
+            await addEventToCalendar(keuringForm, gebruikersnaam)
           }
+        }
 
-          if (asbestDeskundige) {
-            if (keuringForm.asbest_event_ID) {
-              await editEventToDate(asbestDeskundige.gebruikersnaam, keuringForm.asbest_event_ID, keuringForm.datum_plaatsbezoek)
-            } else {
-              await addEventToCalendar(keuringForm, asbestDeskundige.gebruikersnaam, TypeKeuring.ASBEST)
-            }
-          }
+        if (gebruikersnaam === process.env.WEV_ADMIN2) {
+          const eventID = keuringForm.admin2_event_ID
 
-          for (const admin of wevAdmins) {
-            const { gebruikersnaam } = admin
-
-            if (gebruikersnaam === process.env.WEV_ADMIN) {
-              const eventID = keuringForm.admin_event_ID
-
-              if (eventID) {
-                await editEventToDate(gebruikersnaam, eventID, keuringForm.datum_plaatsbezoek)
-              } else {
-                await addEventToCalendar(keuringForm, gebruikersnaam)
-              }
-            }
-            if (gebruikersnaam === process.env.WEV_ADMIN2) {
-              const eventID = keuringForm.admin2_event_ID
-
-              if (eventID) {
-                await editEventToDate(gebruikersnaam, eventID, keuringForm.datum_plaatsbezoek)
-              } else {
-                await addEventToCalendar(keuringForm, gebruikersnaam)
-              }
-            }
+          if (eventID) {
+            await editEventToDate(gebruikersnaam, eventID, keuringForm.datum_plaatsbezoek)
+          } else {
+            await addEventToCalendar(keuringForm, gebruikersnaam)
           }
         }
       }
     }
 
     const originalAssignmentEPCDeskundige = deskundigen.find((deskundige) => originalEPCAssignment.value === deskundige.id)
+
     if (epcAssignmentChanged.value && epcDeskundige) {
-      // if (keuringForm.event_ID && originalAssignmentEPCDeskundige && originalAssignmentEPCDeskundige !== wevAdmin) {
       if (keuringForm.event_ID && originalAssignmentEPCDeskundige && !wevAdmins.map((admin) => admin.id).includes(originalAssignmentEPCDeskundige.id)) {
         await deleteEventFromCalendar(keuringForm.event_ID, originalAssignmentEPCDeskundige.gebruikersnaam)
       }
-      // if (epcDeskundige.gebruikersnaam !== wevAdmin?.gebruikersnaam) {
+
       if (!wevAdmins.map((admin) => admin.id).includes(epcDeskundige.id)) {
         await addEventToCalendar(keuringForm, epcDeskundige.gebruikersnaam, TypeKeuring.EPC)
       }
     }
 
     const originalAssignmentAsbestDeskundige = deskundigen.find((deskundige) => originalAsbestAssignment.value === deskundige.id)
+
     if (asbestAssignmentChanged.value && asbestDeskundige) {
-      // if (keuringForm.event_ID && originalAssignmentAsbestDeskundige && originalAssignmentAsbestDeskundige !== wevAdmin) {
       if (keuringForm.event_ID && originalAssignmentAsbestDeskundige && !wevAdmins.map((admin) => admin.id).includes(originalAssignmentAsbestDeskundige.id)) {
         await deleteEventFromCalendar(keuringForm.event_ID, originalAssignmentAsbestDeskundige.gebruikersnaam)
       }
-      // if (asbestDeskundige.gebruikersnaam !== wevAdmin?.gebruikersnaam) {
+
       if (!wevAdmins.map((admin) => admin.id).includes(asbestDeskundige.id)) {
         await addEventToCalendar(keuringForm, asbestDeskundige.gebruikersnaam, TypeKeuring.ASBEST)
       }
@@ -925,12 +933,13 @@
           </div>
           <div class="datum-plaatsbezoek-wrapper" v-if="vlaamseStad && keuringAddress && keuringClient && authStore.currentlyLoggedIn?.rol === 'deskundige'">
             <h3 class="text-base">Datum Plaatsbezoek</h3>
+            <!-- @date-update="handleDateClick" -->
             <VueDatePicker
               uid="wev-edit-keuring-datepicker"
               v-model="keuringForm.datum_plaatsbezoek"
               :min-date="new Date()"
               @cleared="handleDateClear"
-              @date-update="handleDateClick"
+              @update:model-value="handleDateClick"
               preview-format="dd/MM/yyyy HH:mm"
               format="dd/MM/yyyy HH:mm"
               :min-time="{ hours: 7, minutes: 0 }"
@@ -939,6 +948,8 @@
               cancel-text="Sluiten"
               select-text="Selecteer"
             />
+            <p>Status: {{ keuringForm.status }}</p>
+            <p>{{ datum_plaatsbezoek_edited ? 'EDITED!' : 'SAME DATE AS ORIGINAL!' }}</p>
           </div>
         </div>
         <div class="column">
