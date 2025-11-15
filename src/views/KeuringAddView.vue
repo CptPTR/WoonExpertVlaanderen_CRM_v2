@@ -290,26 +290,36 @@
 
       if (uploadedKeuring.epc_toegewezen_aan) {
         const epcDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.epc_toegewezen_aan === deskundige.id && !deskundige.isAdmin)!
-        epcDeskundigen.map(async (deskundige) => {
-          await sendMail(
-            deskundige.email,
-            `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
-            uploadedKeuring.type,
-            `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
+
+        if (epcDeskundigen.length > 0) {
+          await Promise.all(
+            epcDeskundigen.map((deskundige) => {
+              sendMail(
+                deskundige.email,
+                `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
+                uploadedKeuring.type,
+                `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
+              )
+            })
           )
-        })
+        }
       }
 
       if (uploadedKeuring.asbest_toegewezen_aan && uploadedKeuring.asbest_toegewezen_aan !== uploadedKeuring.epc_toegewezen_aan) {
         const asbestDeskundigen = deskundigenStore.deskundigen.filter((deskundige) => uploadedKeuring.asbest_toegewezen_aan === deskundige.id && !deskundige.isAdmin)!
-        asbestDeskundigen.map(async (deskundige) => {
-          await sendMail(
-            deskundige.email,
-            `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
-            uploadedKeuring.type,
-            `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
+
+        if (asbestDeskundigen.length > 0) {
+          await Promise.all(
+            asbestDeskundigen.map((deskundige) => {
+              sendMail(
+                deskundige.email,
+                `Nieuwe keuring aangemaakt door: ${authStore.currentlyLoggedIn?.organisatie.naam}`,
+                uploadedKeuring.type,
+                `${process.env.FRONTEND_BASE_URL}/keuringen/${uploadedKeuring.id}`
+              )
+            })
           )
-        })
+        }
       }
 
       const recipients = deskundigenStore.deskundigen.filter((deskundige) => deskundige.isAdmin)
@@ -334,7 +344,11 @@
   }
 
   const sendMail = async (to: string, subject: string, type: string, link: string) => {
-    await axios.post(`${process.env.BACKEND_BASE_URL}/send-mail`, { to, subject, type, link })
+    try {
+      await axios.post(`${process.env.BACKEND_BASE_URL}/send-mail`, { to, subject, type, link })
+    } catch (error) {
+      console.error(`Error sending email to ${to}: `, error)
+    }
   }
 
   const handleDate = () => {
