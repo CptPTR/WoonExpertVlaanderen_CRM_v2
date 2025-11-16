@@ -933,7 +933,6 @@
           </div>
           <div class="datum-plaatsbezoek-wrapper" v-if="vlaamseStad && keuringAddress && keuringClient && authStore.currentlyLoggedIn?.rol === 'deskundige'">
             <h3 class="text-base">Datum Plaatsbezoek</h3>
-            <!-- @date-update="handleDateClick" -->
             <VueDatePicker
               uid="wev-edit-keuring-datepicker"
               v-model="keuringForm.datum_plaatsbezoek"
@@ -948,8 +947,6 @@
               cancel-text="Sluiten"
               select-text="Selecteer"
             />
-            <p>Status: {{ keuringForm.status }}</p>
-            <p>{{ datum_plaatsbezoek_edited ? 'EDITED!' : 'SAME DATE AS ORIGINAL!' }}</p>
           </div>
         </div>
         <div class="column">
