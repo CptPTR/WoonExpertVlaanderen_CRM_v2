@@ -381,7 +381,6 @@
     event.preventDefault()
 
     const certificaat = certificatenStore.certificaten.find((cert) => cert.id === id)
-    console.log('certificaat: ', certificaat)
 
     if (certificaat) {
       if (typeKeuring === TypeKeuring.EPC) {
@@ -570,12 +569,27 @@
     event.preventDefault()
 
     const { deskundigen } = deskundigenStore
+
     const epcDeskundige = deskundigen.find((deskundige) => keuringForm.epc_toegewezen_aan === deskundige.id)
     const asbestDeskundige = deskundigen.find((deskundige) => keuringForm.asbest_toegewezen_aan === deskundige.id)
-    const wevAdmins = deskundigen.filter((deskundige) => deskundige.isAdmin)
+    const wevAdmins = deskundigen.filter((deskundige) => {
+      const isAdmin = deskundige.isAdmin
+      let isAssignedToEPC = false
+      let isAssignedToAsbest = false
 
-    if (datum_plaatsbezoek_edited.value && keuringForm.datum_plaatsbezoek && wevAdmins) {
-      if (epcDeskundige && !epcDeskundige.isAdmin) {
+      if (epcDeskundige) {
+        isAssignedToEPC = deskundige.id === epcDeskundige.id
+      }
+
+      if (asbestDeskundige) {
+        isAssignedToAsbest = deskundige.id === asbestDeskundige.id
+      }
+
+      return isAdmin && !isAssignedToEPC && !isAssignedToAsbest
+    })
+
+    if (datum_plaatsbezoek_edited.value && keuringForm.datum_plaatsbezoek) {
+      if (epcDeskundige) {
         if (keuringForm.event_ID) {
           await editEventToDate(epcDeskundige.gebruikersnaam, keuringForm.event_ID, keuringForm.datum_plaatsbezoek)
         } else {
@@ -591,26 +605,22 @@
         }
       }
 
-      for (const admin of wevAdmins) {
-        const { gebruikersnaam } = admin
-
-        if (gebruikersnaam === process.env.WEV_ADMIN) {
-          const eventID = keuringForm.admin_event_ID
-
-          if (eventID) {
-            await editEventToDate(gebruikersnaam, eventID, keuringForm.datum_plaatsbezoek)
-          } else {
-            await addEventToCalendar(keuringForm, gebruikersnaam)
+      if (wevAdmins.length > 0) {
+        for (const admin of wevAdmins) {
+          if (admin.gebruikersnaam === process.env.WEV_ADMIN) {
+            if (keuringForm.admin_event_ID) {
+              await editEventToDate(admin.gebruikersnaam, keuringForm.admin_event_ID, keuringForm.datum_plaatsbezoek)
+            } else {
+              await addEventToCalendar(keuringForm, admin.gebruikersnaam)
+            }
           }
-        }
 
-        if (gebruikersnaam === process.env.WEV_ADMIN2) {
-          const eventID = keuringForm.admin2_event_ID
-
-          if (eventID) {
-            await editEventToDate(gebruikersnaam, eventID, keuringForm.datum_plaatsbezoek)
-          } else {
-            await addEventToCalendar(keuringForm, gebruikersnaam)
+          if (admin.gebruikersnaam === process.env.WEV_ADMIN2) {
+            if (keuringForm.admin2_event_ID) {
+              await editEventToDate(admin.gebruikersnaam, keuringForm.admin2_event_ID, keuringForm.datum_plaatsbezoek)
+            } else {
+              await addEventToCalendar(keuringForm, admin.gebruikersnaam)
+            }
           }
         }
       }
